@@ -16,6 +16,7 @@ func init() {
 type NotifyWatcher struct {
 	eventFd  int
 	wakeupCb func()
+	readBuf  []byte
 }
 
 func NewNotifyWatcher(wakeupCb func()) (*NotifyWatcher, error) {
@@ -27,12 +28,12 @@ func NewNotifyWatcher(wakeupCb func()) (*NotifyWatcher, error) {
 	watcher := new(NotifyWatcher)
 	watcher.eventFd = int(eventFd)
 	watcher.wakeupCb = wakeupCb
+	watcher.readBuf = make([]byte, 8)
 	return watcher, nil
 }
 
 func (this *NotifyWatcher) OnEvent(event uint32) {
-	buf := make([]byte, 8)
-	_, err := syscall.Read(this.eventFd, buf)
+	_, err := syscall.Read(this.eventFd, this.readBuf)
 	if err != nil {
 		return
 	}
