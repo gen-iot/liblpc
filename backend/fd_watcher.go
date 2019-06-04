@@ -29,7 +29,7 @@ func NewFdWatcher(fd int) *FdWatcher {
 	_ = syscall.SetNonblock(fd, true)
 	w := new(FdWatcher)
 	w.fd = fd
-	w.event = syscall.EPOLLIN
+	w.WantRead()
 	return w
 }
 

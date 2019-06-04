@@ -21,6 +21,7 @@ type FdStream struct {
 }
 
 func NewFdStream(loop *IOEvtLoop, fd int, onRead func(sw StreamWriter, data []byte, len int, err error)) *FdStream {
+
 	stream := new(FdStream)
 	stream.FdWatcher = backend.NewFdWatcher(fd)
 	stream.loop = loop

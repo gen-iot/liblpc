@@ -68,6 +68,7 @@ func TestSpawnIO(t *testing.T) {
 	cmd, err := Spawn("bin/child", fds[1])
 	panicIfError(err)
 	fmt.Println("spawn success pid = ", cmd.Process.Pid)
+
 	stream := NewFdStream(loop, int(fds[0]),
 		func(sw StreamWriter, data []byte, len int, err error) {
 			if err == nil {
@@ -78,6 +79,10 @@ func TestSpawnIO(t *testing.T) {
 				_ = sw.Close()
 			}
 		})
+	go func() {
+		err := cmd.Wait()
+		fmt.Println("child exit error -> ", err)
+	}()
 	stream.Update(true)
 	loop.Run()
 }
