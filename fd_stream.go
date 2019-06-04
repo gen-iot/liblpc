@@ -20,9 +20,9 @@ type FdStream struct {
 	onReadCb     func(sw StreamWriter, data []byte, len int, err error)
 }
 
-func NewFdStream(loop *IOEvtLoop, fd int, closeExec bool, onRead func(sw StreamWriter, data []byte, len int, err error)) *FdStream {
+func NewFdStream(loop *IOEvtLoop, fd int, onRead func(sw StreamWriter, data []byte, len int, err error)) *FdStream {
 	stream := new(FdStream)
-	stream.FdWatcher = backend.NewFdWatcher(fd, closeExec)
+	stream.FdWatcher = backend.NewFdWatcher(fd)
 	stream.loop = loop
 	stream.writeQ = list.New()
 	stream.attachToLoop = false

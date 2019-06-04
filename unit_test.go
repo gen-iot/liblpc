@@ -2,6 +2,7 @@ package liblpc
 
 import (
 	"fmt"
+	"os"
 	"syscall"
 	"testing"
 	"time"
@@ -31,11 +32,11 @@ func TestNotify(t *testing.T) {
 }
 
 func TestIOEvtLoop(t *testing.T) {
-	fds, e := syscall.Socketpair(syscall.AF_UNIX, syscall.SOCK_STREAM, 0)
+	fds, e := MakeIpcSockpair(true)
 	panicIfError(e)
 	loop, e := NewIOEvtLoop(4 * 1024)
 	panicIfError(e)
-	stream := NewFdStream(loop, int(fds[0]), false,
+	stream := NewFdStream(loop, int(fds[0]),
 		func(sw StreamWriter, data []byte, len int, err error) {
 			if err == nil {
 				fmt.Println("Server onRead , data is -> ", string(data[:len]))
@@ -56,5 +57,27 @@ func TestIOEvtLoop(t *testing.T) {
 		panicIfError(err)
 	}()
 	loop.Run()
+}
 
+func TestSpawnIO(t *testing.T) {
+	fmt.Println("current pid = ", os.Getpid())
+	fds, err := MakeIpcSockpair(true)
+	panicIfError(err)
+	loop, err := NewIOEvtLoop(2 * 1024 * 1024)
+	panicIfError(err)
+	cmd, err := Spawn("bin/child", fds[1])
+	panicIfError(err)
+	fmt.Println("spawn success pid = ", cmd.Process.Pid)
+	stream := NewFdStream(loop, int(fds[0]),
+		func(sw StreamWriter, data []byte, len int, err error) {
+			if err == nil {
+				fmt.Println("Server onRead , data is -> ", string(data[:len]))
+				sw.Write([]byte(time.Now().String()), true)
+			} else {
+				fmt.Println("Server onRead error -> ", err, " ,closed!")
+				_ = sw.Close()
+			}
+		})
+	stream.Update(true)
+	loop.Run()
 }

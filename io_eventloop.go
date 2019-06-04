@@ -30,6 +30,6 @@ func NewIOEvtLoop(ioBufferSize int) (*IOEvtLoop, error) {
 	}
 	l.cbQ = list.New()
 	l.lock = new(backend.SpinLock)
-	l.ioBuffer = make([]byte, ioBufferSize)
+	l.ioBuffer = make([]byte, ioBufferSize, ioBufferSize)
 	return l, nil
 }
