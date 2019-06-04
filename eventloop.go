@@ -1,14 +1,15 @@
 package liblpc
 
 import (
-	"fmt"
+	"container/list"
 	"liblpc/backend"
-	"time"
 )
 
 type EvtLoop struct {
 	poller backend.Poller
 	notify *backend.NotifyWatcher
+	cbQ    *list.List
+	lock   *backend.SpinLock
 }
 
 func NewEvtLoop() (*EvtLoop, error) {
@@ -28,7 +29,16 @@ func NewEvtLoop() (*EvtLoop, error) {
 	if err != nil {
 		return nil, err
 	}
+	l.cbQ = list.New()
+	l.lock = new(backend.SpinLock)
 	return l, nil
+}
+
+func (this *EvtLoop) RunInLoop(cb func()) {
+	this.lock.Lock()
+	this.cbQ.PushBack(cb)
+	this.lock.Unlock()
+	this.Notify()
 }
 
 func (this *EvtLoop) Notify() {
@@ -36,11 +46,25 @@ func (this *EvtLoop) Notify() {
 }
 
 func (this *EvtLoop) onWakeUp() {
-	fmt.Println(time.Now().String())
+	this.processPending()
+}
+
+func (this *EvtLoop) processPending() {
+	this.lock.Lock()
+	ls := this.cbQ
+	this.cbQ = list.New()
+	this.lock.Unlock()
+	for ; ls.Len() != 0; {
+		front := ls.Front()
+		val := front.Value.(func())
+		ls.Remove(front)
+		val()
+	}
 }
 
 func (this *EvtLoop) Run() {
 	for {
 		_ = this.poller.Poll(-1)
 	}
+	this.processPending()
 }

@@ -1,7 +1,6 @@
 package backend
 
 import (
-	"container/list"
 	"syscall"
 )
 
@@ -24,11 +23,9 @@ func (this *baseEventWatcher) SetEvent(event uint32) {
 
 type FdWatcher struct {
 	baseEventWatcher
-	readBuffer []byte
-	writeQ     *list.List
 }
 
-func NewFdWatcher(fd int, closeExec bool, readBuffer []byte) *FdWatcher {
+func NewFdWatcher(fd int, closeExec bool) *FdWatcher {
 	if closeExec {
 		syscall.CloseOnExec(fd)
 	}
@@ -36,79 +33,64 @@ func NewFdWatcher(fd int, closeExec bool, readBuffer []byte) *FdWatcher {
 	w := new(FdWatcher)
 	w.fd = fd
 	w.event = syscall.EPOLLIN
-	if len(readBuffer) == 0 {
-		readBuffer = make([]byte, 1024*4)
-	}
-	w.readBuffer = readBuffer
-	w.writeQ = list.New()
 	return w
+}
+
+func (this *FdWatcher) Update(inLoop bool) {
+
 }
 
 func (this *FdWatcher) Close() error {
 	return syscall.Close(this.fd)
 }
 
-func (this *FdWatcher) WantRead() {
+func (this *FdWatcher) WantRead() (update bool) {
+	if this.event&syscall.EPOLLIN != 0 {
+		return false
+	}
 	this.event |= syscall.EPOLLIN
+	return true
 }
 
-func (this *FdWatcher) WantWrite() {
+func (this *FdWatcher) DisableRead() (update bool) {
+	if this.event&syscall.EPOLLIN != 0 {
+		this.event &= (^uint32(syscall.EPOLLIN))
+		return true
+	}
+	return false
+}
+
+func (this *FdWatcher) WantWrite() (update bool) {
+	if this.event&syscall.EPOLLOUT != 0 {
+		return false
+	}
 	this.event |= syscall.EPOLLOUT
+	return true
 }
 
-func (this *FdWatcher) OnRead(data []byte, len int) error {
-	return nil
+func (this *FdWatcher) DisableWrite() (update bool) {
+	if this.event&syscall.EPOLLOUT != 0 {
+		this.event &= (^uint32(syscall.EPOLLOUT))
+		return true
+	}
+
+	return false
 }
 
-func (this *FdWatcher) Write(data []byte) error {
-	this.writeQ.PushBack(data)
-	return nil
+func (this *FdWatcher) DisableRW() (update bool) {
+	if this.event == 0 {
+		return false
+	}
+	this.event = 0
+	return true
 }
 
 func WOULDBLOCK(err error) bool {
 	if err == nil {
 		return false
 	}
-	return err == syscall.EWOULDBLOCK || err == syscall.EAGAIN
+	return err == syscall.EAGAIN || err == syscall.EWOULDBLOCK
 }
 
 func (this *FdWatcher) OnEvent(event uint32) {
-
-	if event&syscall.EPOLLOUT != 0 {
-		//writable
-		for ; this.writeQ.Len() != 0; {
-			front := this.writeQ.Front()
-			dataWillWrite := front.Value.([]byte)
-
-			nWrite, err := syscall.SendmsgN(this.fd, dataWillWrite, nil, nil, syscall.MSG_NOSIGNAL)
-			if err != nil {
-				if WOULDBLOCK(err) {
-					dataWillWrite = dataWillWrite[nWrite:]
-					break
-				}
-				//todo onclose
-				return
-			}
-
-			this.writeQ.Remove(front)
-		}
-	}
-
-	if event&syscall.EPOLLIN != 0 {
-		//read
-		for {
-			nRead, _, err := syscall.Recvfrom(this.fd, this.readBuffer, syscall.MSG_NOSIGNAL)
-			if err != nil && WOULDBLOCK(err) {
-				//todo onclose
-				return
-			}
-
-			err = this.OnRead(this.readBuffer, nRead)
-			if err != nil {
-				return
-			}
-
-		}
-	}
-
 }

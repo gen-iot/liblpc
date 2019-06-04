@@ -5,16 +5,16 @@ import (
 	"sync/atomic"
 )
 
-type spinLock struct {
+type SpinLock struct {
 	flag int32
 }
 
-func (this *spinLock) Lock() {
-	for ; atomic.CompareAndSwapInt32(&this.flag, 0, 1); {
+func (this *SpinLock) Lock() {
+	for ; !atomic.CompareAndSwapInt32(&this.flag, 0, 1); {
 		runtime.Gosched()
 	}
 }
 
-func (this *spinLock) Unlock() {
+func (this *SpinLock) Unlock() {
 	atomic.StoreInt32(&this.flag, 0)
 }
