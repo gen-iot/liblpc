@@ -12,6 +12,6 @@ const (
 
 type Poller interface {
 	io.Closer
-	WatcherCtl(action PollerAction, watcher Watcher) error
+	WatcherCtl(action PollerAction, watcher EventWatcher) error
 	Poll(msec int) error
 }

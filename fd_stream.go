@@ -14,24 +14,23 @@ type StreamWriter interface {
 
 type FdStream struct {
 	*backend.FdWatcher
-	loop         *IOEvtLoop
-	writeQ       *list.List
-	attachToLoop bool
-	onReadCb     func(sw StreamWriter, data []byte, len int, err error)
+	writeQ     *list.List
+	onReadCb   func(sw StreamWriter, data []byte, len int, err error)
+	readBuffer []byte
 }
 
 func NewFdStream(loop *IOEvtLoop, fd int, onRead func(sw StreamWriter, data []byte, len int, err error)) *FdStream {
-
+	_ = syscall.SetNonblock(fd, true)
 	stream := new(FdStream)
-	stream.FdWatcher = backend.NewFdWatcher(fd)
-	stream.loop = loop
+	stream.FdWatcher = backend.NewFdWatcher(loop, fd, stream)
+	stream.readBuffer = loop.ioBuffer
 	stream.writeQ = list.New()
-	stream.attachToLoop = false
 	stream.onReadCb = onRead
+	stream.WantRead()
 	return stream
 }
 func (this *FdStream) Close() error {
-	this.loop.RunInLoop(func() {
+	this.Loop().RunInLoop(func() {
 		this.DisableRW()
 		this.Update(true)
 		_ = this.FdWatcher.Close()
@@ -61,39 +60,15 @@ func (this *FdStream) Write(data []byte, inLoop bool) {
 			}
 		}
 	} else {
-		this.loop.RunInLoop(func() {
+		this.Loop().RunInLoop(func() {
 			this.Write(data, true)
 		})
 	}
 }
 
-func (this *FdStream) OnRead(data []byte, len int, err error) {
+func (this *FdStream) onRead(data []byte, len int, err error) {
 	if this.onReadCb != nil {
 		this.onReadCb(this, data, len, err)
-	}
-}
-
-func (this *FdStream) Update(inLoop bool) {
-	if inLoop {
-		if !this.attachToLoop && this.GetEvent() == 0 {
-			return
-		}
-		mode := backend.Mod
-		if this.attachToLoop && this.GetEvent() == 0 {
-			mode = backend.Del
-			this.attachToLoop = false
-		} else if !this.attachToLoop {
-			mode = backend.Add
-			this.attachToLoop = true
-		}
-		err := this.loop.poller.WatcherCtl(mode, this)
-		if err != nil {
-			panic(err)
-		}
-	} else {
-		this.loop.RunInLoop(func() {
-			this.Update(true)
-		})
 	}
 }
 
@@ -118,7 +93,7 @@ func (this *FdStream) OnEvent(event uint32) {
 						}
 						break
 					}
-					this.OnRead(nil, 0, err)
+					this.onRead(nil, 0, err)
 					if this.DisableRW() {
 						this.Update(true)
 					}
@@ -132,7 +107,7 @@ func (this *FdStream) OnEvent(event uint32) {
 	if event&syscall.EPOLLIN != 0 {
 		//read
 		for {
-			nRead, _, err := syscall.Recvfrom(this.GetFd(), this.loop.ioBuffer, syscall.MSG_NOSIGNAL)
+			nRead, _, err := syscall.Recvfrom(this.GetFd(), this.readBuffer, syscall.MSG_NOSIGNAL)
 			if nRead == 0 {
 				err = io.EOF
 			}
@@ -143,13 +118,13 @@ func (this *FdStream) OnEvent(event uint32) {
 					}
 					break
 				}
-				this.OnRead(nil, 0, err)
+				this.onRead(nil, 0, err)
 				if this.DisableRW() {
 					this.Update(true)
 				}
 				return
 			}
-			this.OnRead(this.loop.ioBuffer, nRead, err)
+			this.onRead(this.readBuffer, nRead, err)
 		}
 	}
 }

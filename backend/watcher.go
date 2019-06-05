@@ -2,10 +2,11 @@ package backend
 
 import "io"
 
-type Watcher interface {
+type EventWatcher interface {
 	io.Closer
-	OnEvent(event uint32)
 	GetFd() int
 	GetEvent() uint32
 	SetEvent(event uint32)
+	Update(inLoop bool)
+	OnEvent(event uint32)
 }

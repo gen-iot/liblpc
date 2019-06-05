@@ -4,40 +4,78 @@ import (
 	"syscall"
 )
 
-type baseEventWatcher struct {
-	fd    int
-	event uint32
-}
-
-func (this *baseEventWatcher) GetFd() int {
-	return this.fd
-}
-
-func (this *baseEventWatcher) GetEvent() uint32 {
-	return this.event
-}
-
-func (this *baseEventWatcher) SetEvent(event uint32) {
-	this.event = event
+type IOWatcher interface {
+	EventWatcher
+	Loop() EventLoop
+	WantRead() (update bool)
+	DisableRead() (update bool)
+	WantWrite() (update bool)
+	DisableWrite() (update bool)
+	DisableRW() (update bool)
 }
 
 type FdWatcher struct {
-	baseEventWatcher
+	loop         EventLoop
+	fd           int
+	event        uint32
+	attachToLoop bool
+	impl         IOWatcher
 }
 
-func NewFdWatcher(fd int) *FdWatcher {
-	_ = syscall.SetNonblock(fd, true)
+func NewFdWatcher(loop EventLoop, fd int, impl IOWatcher) *FdWatcher {
 	w := new(FdWatcher)
+	w.loop = loop
 	w.fd = fd
-	w.WantRead()
+	w.event = 0
+	w.attachToLoop = false
+	w.impl = impl
 	return w
 }
 
-func (this *FdWatcher) Update(inLoop bool) {
+func (this *FdWatcher) GetFd() int {
+	return this.fd
+}
 
+func (this *FdWatcher) GetEvent() uint32 {
+	return this.event
+}
+
+func (this *FdWatcher) SetEvent(event uint32) {
+	this.event = event
+}
+
+func (this *FdWatcher) Update(inLoop bool) {
+	if inLoop {
+		if !this.attachToLoop && this.GetEvent() == 0 {
+			return
+		}
+		mode := Mod
+		if this.attachToLoop && this.GetEvent() == 0 {
+			mode = Del
+			this.attachToLoop = false
+		} else if !this.attachToLoop {
+			mode = Add
+			this.attachToLoop = true
+		}
+		err := this.loop.Poller().WatcherCtl(mode, this.impl)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		this.loop.RunInLoop(func() {
+			this.Update(true)
+		})
+	}
+}
+
+func (this *FdWatcher) Loop() EventLoop {
+	return this.loop
 }
 
 func (this *FdWatcher) Close() error {
+	if this.attachToLoop {
+		_ = this.Loop().Poller().WatcherCtl(Del, this.impl)
+	}
 	return syscall.Close(this.fd)
 }
 
@@ -87,7 +125,4 @@ func WOULDBLOCK(err error) bool {
 		return false
 	}
 	return err == syscall.EAGAIN || err == syscall.EWOULDBLOCK
-}
-
-func (this *FdWatcher) OnEvent(event uint32) {
 }

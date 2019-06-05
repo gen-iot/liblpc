@@ -8,7 +8,7 @@ import (
 
 type Epoll struct {
 	pollFd   int
-	watchers map[int]Watcher
+	watchers map[int]EventWatcher
 	pollBuf  []syscall.EpollEvent
 }
 
@@ -21,7 +21,7 @@ func NewPoll() (*Epoll, error) {
 	}
 	p := new(Epoll)
 	p.pollFd = epoFd
-	p.watchers = make(map[int]Watcher)
+	p.watchers = make(map[int]EventWatcher)
 	p.pollBuf = make([]syscall.EpollEvent, 128)
 	return p, nil
 }
@@ -33,7 +33,7 @@ func (this *Epoll) Close() error {
 	return syscall.Close(this.pollFd)
 }
 
-func (this *Epoll) WatcherCtl(action PollerAction, watcher Watcher) error {
+func (this *Epoll) WatcherCtl(action PollerAction, watcher EventWatcher) error {
 	switch action {
 	case Add:
 		return this.AddFd(watcher.GetFd(), watcher.GetEvent(), watcher)
@@ -62,7 +62,7 @@ func (this *Epoll) Poll(msec int) error {
 	return nil
 }
 
-func (this *Epoll) AddFd(fd int, event uint32, watcher Watcher) error {
+func (this *Epoll) AddFd(fd int, event uint32, watcher EventWatcher) error {
 	epEvent := &syscall.EpollEvent{
 		Events: event,
 		Fd:     int32(fd),
