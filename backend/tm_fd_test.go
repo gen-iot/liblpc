@@ -8,8 +8,6 @@ import (
 	"time"
 )
 
-
-
 func TestTimerFd(t *testing.T) {
 	clock := ClockMonotonic
 	fmt.Println("pid = ", os.Getpid())

@@ -75,7 +75,7 @@ func (this *TimerWatcher) Start(delayMs int, intervalMs int) error {
 
 	if delayMs != 0 {
 		delayNs = int64(delayMs)*1e6 + now.Nsec
-		if delayNs > 1e9 {
+		if delayNs >= 1e9 {
 			extSec := delayNs / 1e9
 			delaySec += extSec
 			delayNs = delayNs % 1e9
@@ -87,7 +87,7 @@ func (this *TimerWatcher) Start(delayMs int, intervalMs int) error {
 	if intervalMs != 0 {
 		intervalSec = int64(0)
 		intervalNs = int64(intervalMs * 1e6)
-		if intervalNs > 1e9 {
+		if intervalNs >= 1e9 {
 			intervalSec = int64(intervalNs / 1e9)
 			intervalNs = intervalNs % 1e9
 		}

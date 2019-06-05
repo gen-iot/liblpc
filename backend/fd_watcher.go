@@ -19,16 +19,16 @@ type FdWatcher struct {
 	fd           int
 	event        uint32
 	attachToLoop bool
-	impl         IOWatcher
+	driven       IOWatcher
 }
 
-func NewFdWatcher(loop EventLoop, fd int, impl IOWatcher) *FdWatcher {
+func NewFdWatcher(loop EventLoop, fd int, driven IOWatcher) *FdWatcher {
 	w := new(FdWatcher)
 	w.loop = loop
 	w.fd = fd
 	w.event = 0
 	w.attachToLoop = false
-	w.impl = impl
+	w.driven = driven
 	return w
 }
 
@@ -57,7 +57,7 @@ func (this *FdWatcher) Update(inLoop bool) {
 			mode = Add
 			this.attachToLoop = true
 		}
-		err := this.loop.Poller().WatcherCtl(mode, this.impl)
+		err := this.loop.Poller().WatcherCtl(mode, this.driven)
 		if err != nil {
 			panic(err)
 		}
@@ -74,7 +74,7 @@ func (this *FdWatcher) Loop() EventLoop {
 
 func (this *FdWatcher) Close() error {
 	if this.attachToLoop {
-		_ = this.Loop().Poller().WatcherCtl(Del, this.impl)
+		_ = this.Loop().Poller().WatcherCtl(Del, this.driven)
 	}
 	return syscall.Close(this.fd)
 }
@@ -89,7 +89,7 @@ func (this *FdWatcher) WantRead() (update bool) {
 
 func (this *FdWatcher) DisableRead() (update bool) {
 	if this.event&syscall.EPOLLIN != 0 {
-		this.event &= (^uint32(syscall.EPOLLIN))
+		this.event &= ^uint32(syscall.EPOLLIN)
 		return true
 	}
 	return false
@@ -105,7 +105,7 @@ func (this *FdWatcher) WantWrite() (update bool) {
 
 func (this *FdWatcher) DisableWrite() (update bool) {
 	if this.event&syscall.EPOLLOUT != 0 {
-		this.event &= (^uint32(syscall.EPOLLOUT))
+		this.event &= ^uint32(syscall.EPOLLOUT)
 		return true
 	}
 
