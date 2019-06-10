@@ -30,7 +30,7 @@ func NewEventLoop() (EventLoop, error) {
 
 	l := new(evtLoop)
 	//
-	l.poller, err = NewPoll()
+	l.poller, err = NewPoll(1024)
 	if err != nil {
 		return nil, err
 	}

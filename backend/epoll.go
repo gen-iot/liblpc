@@ -13,7 +13,7 @@ type Epoll struct {
 }
 
 // todo add poll buf size param
-func NewPoll() (*Epoll, error) {
+func NewPoll(pollSize int) (*Epoll, error) {
 	epoFd, err := syscall.EpollCreate1(syscall.EPOLL_CLOEXEC)
 	if err != nil {
 		_ = syscall.Close(epoFd)
@@ -22,7 +22,7 @@ func NewPoll() (*Epoll, error) {
 	p := new(Epoll)
 	p.pollFd = epoFd
 	p.watchers = make(map[int]EventWatcher)
-	p.pollBuf = make([]syscall.EpollEvent, 128)
+	p.pollBuf = make([]syscall.EpollEvent, pollSize)
 	return p, nil
 }
 
