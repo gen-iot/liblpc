@@ -46,7 +46,7 @@ func NewEventLoop() (EventLoop, error) {
 		return nil, err
 	}
 	l.cbQ = list.New()
-	l.lock = new(SpinLock)
+	l.lock = NewSpinLock()
 	l.closeFlag = 0
 	l.stopFlag = 0
 	l.endRunSig = make(chan struct{})

@@ -18,11 +18,12 @@ type TimeWheel struct {
 }
 
 func NewTimeWheel(bucketNum int) *TimeWheel {
-	this := new(TimeWheel)
-	this.bucketQ = list.New()
-	this.bucketNum = bucketNum
-	this.addBucket()
-	return this
+	tw := new(TimeWheel)
+	tw.bucketQ = list.New()
+	tw.bucketNum = bucketNum
+	tw.lock = backend.NewSpinLock()
+	tw.addBucket()
+	return tw
 }
 
 func (this *TimeWheel) addBucket() {

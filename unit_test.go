@@ -41,7 +41,9 @@ func TestIOEvtLoop(t *testing.T) {
 				_ = sw.Close()
 			}
 		})
-	stream.Update(true)
+	defer func() {
+		_ = stream.Close()
+	}()
 	go func() {
 		for idx := 0; idx < 10; idx++ {
 			time.Sleep(time.Second)
@@ -63,7 +65,6 @@ func TestSpawnIO(t *testing.T) {
 	cmd, err := Spawn("bin/child", fds[1])
 	backend.PanicIfError(err)
 	fmt.Println("spawn success pid = ", cmd.Process.Pid)
-
 	stream := NewFdStream(loop, int(fds[0]),
 		func(sw StreamWriter, data []byte, len int, err error) {
 			if err == nil {
@@ -74,10 +75,13 @@ func TestSpawnIO(t *testing.T) {
 				_ = sw.Close()
 			}
 		})
+	defer func() {
+		_ = stream.Close()
+	}()
 	go func() {
 		err := cmd.Wait()
 		fmt.Println("child exit error -> ", err)
+
 	}()
-	stream.Update(true)
 	loop.Run()
 }
