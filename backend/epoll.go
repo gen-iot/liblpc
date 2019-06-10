@@ -12,7 +12,6 @@ type Epoll struct {
 	pollBuf  []syscall.EpollEvent
 }
 
-// todo add poll buf size param
 func NewPoll(pollSize int) (*Epoll, error) {
 	epoFd, err := syscall.EpollCreate1(syscall.EPOLL_CLOEXEC)
 	if err != nil {
