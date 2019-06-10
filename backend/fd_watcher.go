@@ -120,9 +120,3 @@ func (this *FdWatcher) DisableRW() (update bool) {
 	return true
 }
 
-func WOULDBLOCK(err error) bool {
-	if err == nil {
-		return false
-	}
-	return err == syscall.EAGAIN || err == syscall.EWOULDBLOCK
-}

@@ -1,6 +1,7 @@
-package backend
+package liblpc
 
 import (
+	"liblpc/backend"
 	"syscall"
 	"unsafe"
 )
@@ -18,34 +19,39 @@ const (
 	TmFdTimerAbstime = 1 << 0
 )
 
-type TimerWatcher struct {
-	*FdWatcher
+type TimerOnTick func(*Timer)
+
+type Timer struct {
+	*backend.FdWatcher
 	clockId ClockId
 	readBuf []byte
-	onTick  func(*TimerWatcher)
+	onTick  TimerOnTick
 }
 
-func NewTimerWatcher(loop EventLoop, clockId ClockId, onTick func(*TimerWatcher)) (*TimerWatcher, error) {
+func NewTimerWatcher(loop backend.EventLoop, clockId ClockId, onTick TimerOnTick) (*Timer, error) {
 	tfd, err := TimerFdCreate(clockId, TmFdNonblock|TmFdCloexec)
 	if err != nil {
 		return nil, err
 	}
-	tw := new(TimerWatcher)
-	tw.FdWatcher = NewFdWatcher(loop, int(tfd), tw)
+	tw := new(Timer)
+	tw.FdWatcher = backend.NewFdWatcher(loop, int(tfd), tw)
 	tw.clockId = clockId
 	tw.readBuf = make([]byte, 8)
 	tw.onTick = onTick
-	tw.WantRead()
+	tw.Loop().RunInLoop(func() {
+		tw.WantRead()
+		tw.Update(true)
+	})
 	return tw, nil
 }
 
-func (this *TimerWatcher) OnEvent(event uint32) {
+func (this *Timer) OnEvent(event uint32) {
 	if event&syscall.EPOLLIN == 0 {
 		return
 	}
 	_, err := syscall.Read(this.GetFd(), this.readBuf)
 	if err != nil {
-		if WOULDBLOCK(err) {
+		if backend.WOULDBLOCK(err) {
 			if this.WantRead() {
 				this.Update(true)
 			}
@@ -57,14 +63,14 @@ func (this *TimerWatcher) OnEvent(event uint32) {
 	}
 }
 
-func (this *TimerWatcher) Stop() error {
+func (this *Timer) Stop() error {
 	return TimerFdSetTime(this.GetFd(),
 		TmFdTimerAbstime,
 		&ITimerSpec{},
 		nil)
 }
 
-func (this *TimerWatcher) Start(delayMs int, intervalMs int) error {
+func (this *Timer) Start(delayMs int, intervalMs int) error {
 	now, err := ClockGetTime(this.clockId)
 	if err != nil {
 		return err

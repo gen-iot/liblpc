@@ -2,6 +2,7 @@ package backend
 
 import (
 	"fmt"
+	"liblpc"
 	"os"
 	"syscall"
 	"testing"
@@ -9,16 +10,16 @@ import (
 )
 
 func TestTimerFd(t *testing.T) {
-	clock := ClockMonotonic
+	clock := liblpc.ClockMonotonic
 	fmt.Println("pid = ", os.Getpid())
-	now, err := ClockGetTime(clock)
+	now, err := liblpc.ClockGetTime(clock)
 	PanicIfError(err)
-	itmspec := new(ITimerSpec)
+	itmspec := new(liblpc.ITimerSpec)
 	itmspec.ItInterval.Sec = 5
 	itmspec.ItInterval.Nsec = 0
 	itmspec.ItValue.Sec = now.Sec + 5
 	itmspec.ItValue.Nsec = now.Nsec
-	tmfd, err := TimerFdCreate(clock, TmFdCloexec|TmFdNonblock)
+	tmfd, err := liblpc.TimerFdCreate(clock, liblpc.TmFdCloexec|liblpc.TmFdNonblock)
 	if err != nil {
 		panic(err)
 	}
@@ -28,10 +29,10 @@ func TestTimerFd(t *testing.T) {
 	defer func() {
 		_ = syscall.Close(tmfd)
 	}()
-	err = TimerFdSetTime(tmfd, TmFdTimerAbstime, itmspec, nil)
+	err = liblpc.TimerFdSetTime(tmfd, liblpc.TmFdTimerAbstime, itmspec, nil)
 	PanicIfError(err)
 	buf := make([]byte, 8)
-	tmForRead := new(ITimerSpec)
+	tmForRead := new(liblpc.ITimerSpec)
 	idx := 0
 	for {
 		nread, err := syscall.Read(tmfd, buf)
@@ -40,14 +41,14 @@ func TestTimerFd(t *testing.T) {
 			panic("nread!=8")
 		}
 		fmt.Println("now is -> ", time.Now().String())
-		err = TimerFdGetTime(tmfd, tmForRead)
+		err = liblpc.TimerFdGetTime(tmfd, tmForRead)
 		PanicIfError(err)
 		fmt.Println("get time from tmfd -> ", *tmForRead)
-		timespec, err := ClockGetTime(clock)
+		timespec, err := liblpc.ClockGetTime(clock)
 		PanicIfError(err)
 		if idx%2 == 0 {
 			idx = 1
-			TimerFdSetTime(tmfd, TmFdTimerAbstime, &ITimerSpec{
+			liblpc.TimerFdSetTime(tmfd, liblpc.TmFdTimerAbstime, &liblpc.ITimerSpec{
 				ItInterval: syscall.Timespec{
 					Sec:  0,
 					Nsec: 0,
@@ -59,7 +60,7 @@ func TestTimerFd(t *testing.T) {
 			}, nil)
 		} else {
 			idx = 0
-			TimerFdSetTime(tmfd, TmFdTimerAbstime, &ITimerSpec{
+			liblpc.TimerFdSetTime(tmfd, liblpc.TmFdTimerAbstime, &liblpc.ITimerSpec{
 				ItInterval: syscall.Timespec{
 					Sec:  0,
 					Nsec: 0,

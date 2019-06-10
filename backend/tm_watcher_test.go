@@ -2,6 +2,7 @@ package backend
 
 import (
 	"fmt"
+	"liblpc"
 	"testing"
 	"time"
 )
@@ -11,7 +12,7 @@ func TestTMWatcher(t *testing.T) {
 	PanicIfError(err)
 	defer func() { PanicIfError(loop.Close()) }()
 	countDown := 5
-	watcher, err := NewTimerWatcher(loop, ClockMonotonic, func(ins *TimerWatcher) {
+	watcher, err := liblpc.NewTimerWatcher(loop, liblpc.ClockMonotonic, func(ins *liblpc.Timer) {
 		fmt.Println("ontick ", time.Now().String())
 		countDown--
 		if countDown == 0 {

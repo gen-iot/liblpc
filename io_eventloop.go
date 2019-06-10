@@ -9,6 +9,8 @@ type IOEvtLoop struct {
 	ioBuffer []byte
 }
 
+const DefaultIOEvtLoopBufferSize = 1024 * 4
+
 func NewIOEvtLoop(ioBufferSize int) (*IOEvtLoop, error) {
 	var err error = nil
 	l := new(IOEvtLoop)

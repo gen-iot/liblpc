@@ -12,21 +12,26 @@ type StreamWriter interface {
 	Write(data []byte, inLoop bool)
 }
 
+type FdStreamOnRead func(sw StreamWriter, data []byte, len int, err error)
+
 type FdStream struct {
 	*backend.FdWatcher
 	writeQ     *list.List
-	onReadCb   func(sw StreamWriter, data []byte, len int, err error)
+	onReadCb   FdStreamOnRead
 	readBuffer []byte
 }
 
-func NewFdStream(loop *IOEvtLoop, fd int, onRead func(sw StreamWriter, data []byte, len int, err error)) *FdStream {
+func NewFdStream(loop *IOEvtLoop, fd int, onRead FdStreamOnRead) *FdStream {
 	_ = syscall.SetNonblock(fd, true)
 	stream := new(FdStream)
 	stream.FdWatcher = backend.NewFdWatcher(loop, fd, stream)
 	stream.readBuffer = loop.ioBuffer
 	stream.writeQ = list.New()
 	stream.onReadCb = onRead
-	stream.WantRead()
+	stream.Loop().RunInLoop(func() {
+		stream.WantRead()
+		stream.Update(true)
+	})
 	return stream
 }
 func (this *FdStream) Close() error {
