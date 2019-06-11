@@ -32,7 +32,7 @@ func (this *FdListener) OnEvent(event uint32) {
 		return
 	}
 	for {
-		fd, _, err := syscall.Accept4(this.GetFd(), syscall.O_NONBLOCK|syscall.O_CLOEXEC)
+		fd, _, err := syscall.Accept4(this.GetFd(), syscall.O_NONBLOCK|syscall.O_CLOEXEC) //review me!
 		if err != nil {
 			if backend.WOULDBLOCK(err) {
 				return
