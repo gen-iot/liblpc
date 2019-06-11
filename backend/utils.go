@@ -1,6 +1,9 @@
 package backend
 
-import "syscall"
+import (
+	"io"
+	"syscall"
+)
 
 func PanicIfError(err error) {
 	if err != nil {
@@ -21,3 +24,6 @@ func WOULDBLOCK(err error) bool {
 	return err == syscall.EAGAIN || err == syscall.EWOULDBLOCK
 }
 
+func CloseIgnoreErr(clo io.Closer) {
+	_ = clo.Close()
+}
