@@ -85,7 +85,7 @@ func (this *Epoll) ModFd(fd int, event uint32) error {
 
 func (this *Epoll) DelFd(fd int) error {
 	err := syscall.EpollCtl(this.pollFd, syscall.EPOLL_CTL_DEL, fd, nil)
-	if err != nil {
+	if err == nil {
 		delete(this.watchers, fd)
 	}
 	return err

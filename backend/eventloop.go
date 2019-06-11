@@ -56,8 +56,8 @@ func NewEventLoop() (EventLoop, error) {
 func (this *evtLoop) RunInLoop(cb func()) {
 	this.lock.Lock()
 	if atomic.LoadInt32(&this.stopFlag) == 1 {
-		this.lock.Unlock()
 		cb()
+		this.lock.Unlock()
 		return
 	}
 	this.cbQ.PushBack(cb)

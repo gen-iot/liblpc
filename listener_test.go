@@ -11,12 +11,12 @@ import (
 
 func onStream(sw StreamWriter, data []byte, len int, err error) {
 	if err != nil {
+		sw.(*FdStream).Loop().Break()
 		backend.CloseIgnoreErr(sw)
 		fmt.Println("onread got error ", err)
-		sw.(*FdStream).Loop().Break()
 		return
 	}
-	fmt.Println("onread", string(data))
+	fmt.Println("onread", string(data[:len]))
 }
 
 func onAccept(ln *FdListener, newFd int) {
@@ -36,13 +36,16 @@ func localConTester(addr *net.UnixAddr) {
 		default:
 		}
 		time.Sleep(time.Millisecond * 500)
-		conn.Write([]byte(fmt.Sprintf("hello , time -> %s", time.Now().String())))
+		_, err := conn.Write([]byte(fmt.Sprintf("hello , time -> %s", time.Now().String())))
+		backend.PanicIfError(err)
 	}
 }
 
 func TestListener(t *testing.T) {
 	_ = os.Remove("test_xyz.ipc")
-	defer os.Remove("test_xyz.ipc")
+	defer func() {
+		_ = os.Remove("test_xyz.ipc")
+	}()
 	loop, err := NewIOEvtLoop(1024 * 4)
 	backend.PanicIfError(err)
 	defer backend.CloseIgnoreErr(loop)
