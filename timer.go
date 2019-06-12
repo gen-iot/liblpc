@@ -1,6 +1,7 @@
 package liblpc
 
 import (
+	"gitee.com/SuzhenProjects/liblpc/utils"
 	"syscall"
 	"unsafe"
 )

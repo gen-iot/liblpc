@@ -2,6 +2,7 @@ package liblpc
 
 import (
 	"fmt"
+	"gitee.com/SuzhenProjects/liblpc/utils"
 	"os"
 	"syscall"
 	"testing"
@@ -12,7 +13,7 @@ func TestTimerFd(t *testing.T) {
 	clock := ClockMonotonic
 	fmt.Println("pid = ", os.Getpid())
 	now, err := ClockGetTime(clock)
-	PanicIfError(err)
+	utils.PanicIfError(err)
 	itmspec := new(ITimerSpec)
 	itmspec.ItInterval.Sec = 5
 	itmspec.ItInterval.Nsec = 0
@@ -24,27 +25,27 @@ func TestTimerFd(t *testing.T) {
 	}
 	fmt.Println("tmfd = ", tmfd)
 	err = syscall.SetNonblock(tmfd, false)
-	PanicIfError(err)
+	utils.PanicIfError(err)
 	defer func() {
 		_ = syscall.Close(tmfd)
 	}()
 	err = TimerFdSetTime(tmfd, TmFdTimerAbstime, itmspec, nil)
-	PanicIfError(err)
+	utils.PanicIfError(err)
 	buf := make([]byte, 8)
 	tmForRead := new(ITimerSpec)
 	idx := 0
 	for {
 		nread, err := syscall.Read(tmfd, buf)
-		PanicIfError(err)
+		utils.PanicIfError(err)
 		if nread != 8 {
 			panic("nread!=8")
 		}
 		fmt.Println("now is -> ", time.Now().String())
 		err = TimerFdGetTime(tmfd, tmForRead)
-		PanicIfError(err)
+		utils.PanicIfError(err)
 		fmt.Println("get time from tmfd -> ", *tmForRead)
 		timespec, err := ClockGetTime(clock)
-		PanicIfError(err)
+		utils.PanicIfError(err)
 		if idx%2 == 0 {
 			idx = 1
 			TimerFdSetTime(tmfd, TmFdTimerAbstime, &ITimerSpec{
