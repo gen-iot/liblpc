@@ -1,7 +1,6 @@
 package liblpc
 
 import (
-	"gitee.com/SuzhenProjects/liblpc/utils"
 	"syscall"
 )
 
@@ -34,7 +33,7 @@ func (this *FdListener) OnEvent(event uint32) {
 	for {
 		fd, _, err := syscall.Accept4(this.GetFd(), syscall.O_NONBLOCK|syscall.O_CLOEXEC) //review me!
 		if err != nil {
-			if utils.WOULDBLOCK(err) {
+			if WOULDBLOCK(err) {
 				return
 			}
 			return
