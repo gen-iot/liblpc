@@ -57,12 +57,12 @@ func (this *FdWatcher) Update(inLoop bool) {
 			mode = Add
 			this.attachToLoop = true
 		}
-		err := Poller().WatcherCtl(mode, this.driven)
+		err := this.Loop().Poller().WatcherCtl(mode, this.driven)
 		if err != nil {
 			panic(err)
 		}
 	} else {
-		RunInLoop(func() {
+		this.Loop().RunInLoop(func() {
 			this.Update(true)
 		})
 	}
@@ -74,7 +74,7 @@ func (this *FdWatcher) Loop() EventLoop {
 
 func (this *FdWatcher) Close() error {
 	if this.attachToLoop {
-		_ = Poller().WatcherCtl(Del, this.driven)
+		_ = this.Loop().Poller().WatcherCtl(Del, this.driven)
 	}
 	return syscall.Close(this.fd)
 }
@@ -119,4 +119,3 @@ func (this *FdWatcher) DisableRW() (update bool) {
 	this.event = 0
 	return true
 }
-
