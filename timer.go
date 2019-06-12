@@ -1,7 +1,6 @@
 package liblpc
 
 import (
-	"liblpc/backend"
 	"syscall"
 	"unsafe"
 )
@@ -22,19 +21,19 @@ const (
 type TimerOnTick func(*Timer)
 
 type Timer struct {
-	*backend.FdWatcher
+	*FdWatcher
 	clockId ClockId
 	readBuf []byte
 	onTick  TimerOnTick
 }
 
-func NewTimerWatcher(loop backend.EventLoop, clockId ClockId, onTick TimerOnTick) (*Timer, error) {
+func NewTimerWatcher(loop EventLoop, clockId ClockId, onTick TimerOnTick) (*Timer, error) {
 	tfd, err := TimerFdCreate(clockId, TmFdNonblock|TmFdCloexec)
 	if err != nil {
 		return nil, err
 	}
 	tw := new(Timer)
-	tw.FdWatcher = backend.NewFdWatcher(loop, int(tfd), tw)
+	tw.FdWatcher = NewFdWatcher(loop, int(tfd), tw)
 	tw.clockId = clockId
 	tw.readBuf = make([]byte, 8)
 	tw.onTick = onTick
@@ -51,7 +50,7 @@ func (this *Timer) OnEvent(event uint32) {
 	}
 	_, err := syscall.Read(this.GetFd(), this.readBuf)
 	if err != nil {
-		if backend.WOULDBLOCK(err) {
+		if WOULDBLOCK(err) {
 			if this.WantRead() {
 				this.Update(true)
 			}

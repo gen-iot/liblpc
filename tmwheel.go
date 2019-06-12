@@ -2,7 +2,6 @@ package liblpc
 
 import (
 	"container/list"
-	"liblpc/backend"
 )
 
 type TimeoutRef interface {
@@ -14,14 +13,14 @@ type Bucket *list.List
 type TimeWheel struct {
 	bucketQ   *list.List
 	bucketNum int
-	lock      *backend.SpinLock
+	lock      *SpinLock
 }
 
 func NewTimeWheel(bucketNum int) *TimeWheel {
 	tw := new(TimeWheel)
 	tw.bucketQ = list.New()
 	tw.bucketNum = bucketNum
-	tw.lock = backend.NewSpinLock()
+	tw.lock = NewSpinLock()
 	tw.addBucket()
 	return tw
 }

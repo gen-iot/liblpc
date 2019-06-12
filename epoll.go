@@ -1,6 +1,6 @@
 //+build linux
 
-package backend
+package liblpc
 
 import (
 	"fmt"

@@ -1,4 +1,4 @@
-package backend
+package liblpc
 
 import (
 	"syscall"
@@ -57,12 +57,12 @@ func (this *FdWatcher) Update(inLoop bool) {
 			mode = Add
 			this.attachToLoop = true
 		}
-		err := this.loop.Poller().WatcherCtl(mode, this.driven)
+		err := Poller().WatcherCtl(mode, this.driven)
 		if err != nil {
 			panic(err)
 		}
 	} else {
-		this.loop.RunInLoop(func() {
+		RunInLoop(func() {
 			this.Update(true)
 		})
 	}
@@ -74,7 +74,7 @@ func (this *FdWatcher) Loop() EventLoop {
 
 func (this *FdWatcher) Close() error {
 	if this.attachToLoop {
-		_ = this.Loop().Poller().WatcherCtl(Del, this.driven)
+		_ = Poller().WatcherCtl(Del, this.driven)
 	}
 	return syscall.Close(this.fd)
 }

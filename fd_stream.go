@@ -15,7 +15,7 @@ type StreamWriter interface {
 type FdStreamOnRead func(sw StreamWriter, data []byte, len int, err error)
 
 type FdStream struct {
-	*backend.FdWatcher
+	*FdWatcher
 	writeQ     *list.List
 	onReadCb   FdStreamOnRead
 	readBuffer []byte
@@ -24,7 +24,7 @@ type FdStream struct {
 func NewFdStream(loop *IOEvtLoop, fd int, onRead FdStreamOnRead) *FdStream {
 	_ = syscall.SetNonblock(fd, true)
 	stream := new(FdStream)
-	stream.FdWatcher = backend.NewFdWatcher(loop, fd, stream)
+	stream.FdWatcher = NewFdWatcher(loop, fd, stream)
 	stream.readBuffer = loop.ioBuffer
 	stream.writeQ = list.New()
 	stream.onReadCb = onRead
@@ -91,7 +91,7 @@ func (this *FdStream) OnEvent(event uint32) {
 
 				nWrite, err := syscall.SendmsgN(this.GetFd(), dataWillWrite, nil, nil, syscall.MSG_NOSIGNAL)
 				if err != nil {
-					if backend.WOULDBLOCK(err) {
+					if WOULDBLOCK(err) {
 						dataWillWrite = dataWillWrite[nWrite:]
 						if this.WantWrite() {
 							this.Update(true)
@@ -117,7 +117,7 @@ func (this *FdStream) OnEvent(event uint32) {
 				err = io.EOF
 			}
 			if err != nil {
-				if backend.WOULDBLOCK(err) {
+				if WOULDBLOCK(err) {
 					if this.WantRead() {
 						this.Update(true)
 					}

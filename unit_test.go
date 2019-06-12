@@ -2,14 +2,13 @@ package liblpc
 
 import (
 	"fmt"
-	"liblpc/backend"
 	"os"
 	"syscall"
 	"testing"
 	"time"
 )
 
-func testEvtloop(evtLoop backend.EventLoop) {
+func testEvtloop(evtLoop EventLoop) {
 	time.Sleep(time.Second)
 	for {
 		time.Sleep(time.Second)
@@ -20,17 +19,17 @@ func testEvtloop(evtLoop backend.EventLoop) {
 }
 
 func TestNotify(t *testing.T) {
-	evtLoop, err := backend.NewEventLoop()
+	evtLoop, err := NewEventLoop()
 	go testEvtloop(evtLoop)
-	backend.PanicIfError(err)
+	PanicIfError(err)
 	evtLoop.Run()
 }
 
 func TestIOEvtLoop(t *testing.T) {
 	fds, e := MakeIpcSockpair(true)
-	backend.PanicIfError(e)
+	PanicIfError(e)
 	loop, e := NewIOEvtLoop(4 * 1024)
-	backend.PanicIfError(e)
+	PanicIfError(e)
 	stream := NewFdStream(loop, int(fds[0]),
 		func(sw StreamWriter, data []byte, len int, err error) {
 			if err == nil {
@@ -48,10 +47,10 @@ func TestIOEvtLoop(t *testing.T) {
 		for idx := 0; idx < 10; idx++ {
 			time.Sleep(time.Second)
 			_, err := syscall.Write(fds[1], []byte(time.Now().String()))
-			backend.PanicIfError(err)
+			PanicIfError(err)
 		}
 		err := syscall.Close(fds[1])
-		backend.PanicIfError(err)
+		PanicIfError(err)
 	}()
 	loop.Run()
 }
@@ -59,11 +58,11 @@ func TestIOEvtLoop(t *testing.T) {
 func TestSpawnIO(t *testing.T) {
 	fmt.Println("current pid = ", os.Getpid())
 	fds, err := MakeIpcSockpair(true)
-	backend.PanicIfError(err)
+	PanicIfError(err)
 	loop, err := NewIOEvtLoop(2 * 1024 * 1024)
-	backend.PanicIfError(err)
+	PanicIfError(err)
 	cmd, err := Spawn("bin/child", fds[1])
-	backend.PanicIfError(err)
+	PanicIfError(err)
 	fmt.Println("spawn success pid = ", cmd.Process.Pid)
 	stream := NewFdStream(loop, int(fds[0]),
 		func(sw StreamWriter, data []byte, len int, err error) {

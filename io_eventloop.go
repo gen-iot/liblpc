@@ -1,11 +1,7 @@
 package liblpc
 
-import (
-	"liblpc/backend"
-)
-
 type IOEvtLoop struct {
-	backend.EventLoop
+	EventLoop
 	ioBuffer []byte
 }
 
@@ -14,7 +10,7 @@ const DefaultIOEvtLoopBufferSize = 1024 * 4
 func NewIOEvtLoop(ioBufferSize int) (*IOEvtLoop, error) {
 	var err error = nil
 	l := new(IOEvtLoop)
-	rawL, err := backend.NewEventLoop()
+	rawL, err := NewEventLoop()
 	if err != nil {
 		return nil, err
 	}
