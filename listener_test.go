@@ -2,7 +2,7 @@ package liblpc
 
 import (
 	"fmt"
-	"liblpc/backend"
+	"gitee.com/Puietel/std"
 	"net"
 	"os"
 	"testing"
@@ -12,7 +12,7 @@ import (
 func onStream(sw StreamWriter, data []byte, len int, err error) {
 	if err != nil {
 		sw.(*FdStream).Loop().Break()
-		backend.CloseIgnoreErr(sw)
+		std.CloseIgnoreErr(sw)
 		fmt.Println("onread got error ", err)
 		return
 	}
@@ -26,8 +26,8 @@ func onAccept(ln *FdListener, newFd int) {
 
 func localConTester(addr *net.UnixAddr) {
 	conn, e := net.DialUnix("unix", nil, addr)
-	backend.PanicIfError(e)
-	defer backend.CloseIgnoreErr(conn)
+	std.AssertError(e, "dial unix")
+	defer std.CloseIgnoreErr(conn)
 	tm := time.After(time.Second * 10)
 	for {
 		select {
@@ -37,7 +37,7 @@ func localConTester(addr *net.UnixAddr) {
 		}
 		time.Sleep(time.Millisecond * 500)
 		_, err := conn.Write([]byte(fmt.Sprintf("hello , time -> %s", time.Now().String())))
-		backend.PanicIfError(err)
+		std.AssertError(err, "conn write")
 	}
 }
 
@@ -47,16 +47,16 @@ func TestListener(t *testing.T) {
 		_ = os.Remove("test_xyz.ipc")
 	}()
 	loop, err := NewIOEvtLoop(1024 * 4)
-	backend.PanicIfError(err)
-	defer backend.CloseIgnoreErr(loop)
+	std.AssertError(err, "new io eventloop")
+	defer std.CloseIgnoreErr(loop)
 	addr, err := net.ResolveUnixAddr("unix", "test_xyz.ipc")
-	backend.PanicIfError(err)
+	std.AssertError(err, "resolve unix addr")
 	listener, err := net.ListenUnix("unix", addr)
-	backend.PanicIfError(err)
+	std.AssertError(err, "listen unix")
 	f, err := listener.File()
-	backend.PanicIfError(err)
+	std.AssertError(err, "get listener file")
 	fdl := NewFdListener(loop, int(f.Fd()), onAccept)
-	defer backend.CloseIgnoreErr(fdl)
+	defer std.CloseIgnoreErr(fdl)
 	go localConTester(addr)
 	loop.Run()
 }

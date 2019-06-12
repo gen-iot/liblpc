@@ -2,7 +2,7 @@ package liblpc
 
 import (
 	"fmt"
-	"gitee.com/SuzhenProjects/liblpc/utils"
+	"gitee.com/Puietel/std"
 	"os"
 	"syscall"
 	"testing"
@@ -13,7 +13,7 @@ func TestTimerFd(t *testing.T) {
 	clock := ClockMonotonic
 	fmt.Println("pid = ", os.Getpid())
 	now, err := ClockGetTime(clock)
-	utils.PanicIfError(err)
+	std.AssertError(err, "ClockGetTime")
 	itmspec := new(ITimerSpec)
 	itmspec.ItInterval.Sec = 5
 	itmspec.ItInterval.Nsec = 0
@@ -25,27 +25,27 @@ func TestTimerFd(t *testing.T) {
 	}
 	fmt.Println("tmfd = ", tmfd)
 	err = syscall.SetNonblock(tmfd, false)
-	utils.PanicIfError(err)
+	std.AssertError(err, "SetNonblock")
 	defer func() {
 		_ = syscall.Close(tmfd)
 	}()
 	err = TimerFdSetTime(tmfd, TmFdTimerAbstime, itmspec, nil)
-	utils.PanicIfError(err)
+	std.AssertError(err, "TimerFdSetTime")
 	buf := make([]byte, 8)
 	tmForRead := new(ITimerSpec)
 	idx := 0
 	for {
 		nread, err := syscall.Read(tmfd, buf)
-		utils.PanicIfError(err)
+		std.AssertError(err, "Read")
 		if nread != 8 {
 			panic("nread!=8")
 		}
 		fmt.Println("now is -> ", time.Now().String())
 		err = TimerFdGetTime(tmfd, tmForRead)
-		utils.PanicIfError(err)
+		std.AssertError(err, "TimerFdGetTime")
 		fmt.Println("get time from tmfd -> ", *tmForRead)
 		timespec, err := ClockGetTime(clock)
-		utils.PanicIfError(err)
+		std.AssertError(err, "ClockGetTime")
 		if idx%2 == 0 {
 			idx = 1
 			TimerFdSetTime(tmfd, TmFdTimerAbstime, &ITimerSpec{

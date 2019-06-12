@@ -2,7 +2,7 @@ package liblpc
 
 import (
 	"fmt"
-	"gitee.com/SuzhenProjects/liblpc/utils"
+	"gitee.com/Puietel/std"
 	"os"
 	"syscall"
 	"testing"
@@ -22,15 +22,15 @@ func testEvtloop(evtLoop EventLoop) {
 func TestNotify(t *testing.T) {
 	evtLoop, err := NewEventLoop()
 	go testEvtloop(evtLoop)
-	utils.PanicIfError(err)
+	std.AssertError(err, "NewEventLoop")
 	evtLoop.Run()
 }
 
 func TestIOEvtLoop(t *testing.T) {
 	fds, e := MakeIpcSockpair(true)
-	utils.PanicIfError(e)
+	std.AssertError(e, "MakeIpcSockpair")
 	loop, e := NewIOEvtLoop(4 * 1024)
-	utils.PanicIfError(e)
+	std.AssertError(e, "NewIOEvtLoop")
 	stream := NewFdStream(loop, int(fds[0]),
 		func(sw StreamWriter, data []byte, len int, err error) {
 			if err == nil {
@@ -48,10 +48,10 @@ func TestIOEvtLoop(t *testing.T) {
 		for idx := 0; idx < 10; idx++ {
 			time.Sleep(time.Second)
 			_, err := syscall.Write(fds[1], []byte(time.Now().String()))
-			utils.PanicIfError(err)
+			std.AssertError(err, "Write")
 		}
 		err := syscall.Close(fds[1])
-		utils.PanicIfError(err)
+		std.AssertError(err, "Close")
 	}()
 	loop.Run()
 }
@@ -59,11 +59,11 @@ func TestIOEvtLoop(t *testing.T) {
 func TestSpawnIO(t *testing.T) {
 	fmt.Println("current pid = ", os.Getpid())
 	fds, err := MakeIpcSockpair(true)
-	utils.PanicIfError(err)
+	std.AssertError(err, "MakeIpcSockpair")
 	loop, err := NewIOEvtLoop(2 * 1024 * 1024)
-	utils.PanicIfError(err)
+	std.AssertError(err, "NewIOEvtLoop")
 	cmd, err := Spawn("bin/child", fds[1])
-	utils.PanicIfError(err)
+	std.AssertError(err, "Spawn")
 	fmt.Println("spawn success pid = ", cmd.Process.Pid)
 	stream := NewFdStream(loop, int(fds[0]),
 		func(sw StreamWriter, data []byte, len int, err error) {
