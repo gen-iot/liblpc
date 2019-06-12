@@ -3,7 +3,6 @@ package liblpc
 import (
 	"container/list"
 	"io"
-	"liblpc/backend"
 	"syscall"
 )
 
