@@ -20,3 +20,4 @@
 bin/
 vendor/
 Gopkg.lock
+test_xyz.ipc
