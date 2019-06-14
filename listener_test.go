@@ -21,7 +21,8 @@ func onStream(sw StreamWriter, data []byte, len int, err error) {
 
 func onAccept(ln *FdListener, newFd int) {
 	fmt.Println("on accept , newfd = ", newFd)
-	NewFdStream(ln.Loop().(*IOEvtLoop), newFd, onStream)
+	stream := NewFdStream(ln.Loop().(*IOEvtLoop), newFd, onStream)
+	stream.Start()
 }
 
 func localConTester(addr *net.UnixAddr) {
@@ -57,6 +58,7 @@ func TestListener(t *testing.T) {
 	std.AssertError(err, "get listener file")
 	fdl := NewFdListener(loop, int(f.Fd()), onAccept)
 	defer std.CloseIgnoreErr(fdl)
+	fdl.Start()
 	go localConTester(addr)
 	loop.Run()
 }

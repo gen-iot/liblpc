@@ -38,6 +38,13 @@ func NewFdWatcher(loop EventLoop, fd int, watcher IOWatcher) *FdWatcher {
 	return w
 }
 
+func (this *FdWatcher) Start() {
+	this.Loop().RunInLoop(func() {
+		this.WantRead()
+		this.Update(true)
+	})
+}
+
 // helper for driven class
 func (this *FdWatcher) SetWatcher(watcher IOWatcher) {
 	this.watcher = watcher

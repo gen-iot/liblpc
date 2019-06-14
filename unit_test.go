@@ -44,6 +44,7 @@ func TestIOEvtLoop(t *testing.T) {
 	defer func() {
 		_ = stream.Close()
 	}()
+	stream.Start()
 	go func() {
 		for idx := 0; idx < 10; idx++ {
 			time.Sleep(time.Second)
@@ -78,6 +79,7 @@ func TestSpawnIO(t *testing.T) {
 	defer func() {
 		_ = stream.Close()
 	}()
+	stream.Start()
 	go func() {
 		err := cmd.Wait()
 		fmt.Println("child exit error -> ", err)

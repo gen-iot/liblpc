@@ -28,10 +28,6 @@ func NewFdStream(loop *IOEvtLoop, fd int, onRead FdStreamOnRead) *FdStream {
 	stream.readBuffer = loop.ioBuffer
 	stream.writeQ = list.New()
 	stream.onReadCb = onRead
-	stream.Loop().RunInLoop(func() {
-		stream.WantRead()
-		stream.Update(true)
-	})
 	return stream
 }
 

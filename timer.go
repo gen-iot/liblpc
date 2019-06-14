@@ -69,7 +69,7 @@ func (this *Timer) Stop() error {
 		nil)
 }
 
-func (this *Timer) Start(delayMs int, intervalMs int) error {
+func (this *Timer) StartTimer(delayMs int, intervalMs int) error {
 	now, err := ClockGetTime(this.clockId)
 	if err != nil {
 		return err
