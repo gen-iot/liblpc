@@ -10,12 +10,13 @@ type FdBufferedStream struct {
 
 type FdBufferedStreamOnRead func(sw StreamWriter, buf std.ReadableBuffer, err error)
 
-func NewFdBufferedStream(loop *IOEvtLoop, fd int, onRead FdBufferedStreamOnRead) {
+func NewFdBufferedStream(loop *IOEvtLoop, fd int, onRead FdBufferedStreamOnRead) *FdBufferedStream {
 	s := new(FdBufferedStream)
 	s.FdStream = NewFdStream(loop, fd, s.onFdStreamRead)
 	s.SetWatcher(s)
 	s.bytesBuffer = std.NewByteBuffer()
 	s.onBufferedReadCb = onRead
+	return s
 }
 
 func (this *FdBufferedStream) onFdStreamRead(sw StreamWriter, data []byte, len int, err error) {
