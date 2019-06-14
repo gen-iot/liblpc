@@ -14,12 +14,18 @@ type IOWatcher interface {
 	DisableRW() (update bool)
 }
 
+type UserDataStorage interface {
+	GetUserData() interface{}
+	SetUserData(interface{})
+}
+
 type FdWatcher struct {
 	loop         EventLoop
 	fd           int
 	event        uint32
 	attachToLoop bool
 	watcher      IOWatcher
+	userData     interface{}
 }
 
 func NewFdWatcher(loop EventLoop, fd int, watcher IOWatcher) *FdWatcher {
@@ -35,6 +41,14 @@ func NewFdWatcher(loop EventLoop, fd int, watcher IOWatcher) *FdWatcher {
 // helper for driven class
 func (this *FdWatcher) SetWatcher(watcher IOWatcher) {
 	this.watcher = watcher
+}
+
+func (this *FdWatcher) GetUserData() interface{} {
+	return this.userData
+}
+
+func (this *FdWatcher) SetUserData(data interface{}) {
+	this.userData = data
 }
 
 func (this *FdWatcher) GetFd() int {

@@ -9,6 +9,7 @@ import (
 type StreamWriter interface {
 	io.Closer
 	Write(data []byte, inLoop bool)
+	UserDataStorage
 }
 
 type FdStreamOnRead func(sw StreamWriter, data []byte, len int, err error)
@@ -33,6 +34,7 @@ func NewFdStream(loop *IOEvtLoop, fd int, onRead FdStreamOnRead) *FdStream {
 	})
 	return stream
 }
+
 func (this *FdStream) Close() error {
 	this.Loop().RunInLoop(func() {
 		this.DisableRW()
