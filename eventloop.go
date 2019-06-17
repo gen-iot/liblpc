@@ -90,6 +90,7 @@ func (this *evtLoop) Break() {
 		panic("loop already send stop signal!")
 	}
 	atomic.StoreInt32(&this.stopFlag, 1)
+	this.Notify()
 }
 
 func (this *evtLoop) Close() error {
