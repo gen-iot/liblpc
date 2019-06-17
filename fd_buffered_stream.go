@@ -24,7 +24,7 @@ func (this *FdBufferedStream) onFdStreamRead(sw StreamWriter, data []byte, len i
 		this.onBufferedReadCbWrapper(this, this.bytesBuffer, err)
 		return
 	}
-	this.bytesBuffer.Write(data)
+	this.bytesBuffer.Write(data[:len])
 	this.onBufferedReadCbWrapper(this, this.bytesBuffer, nil)
 }
 
