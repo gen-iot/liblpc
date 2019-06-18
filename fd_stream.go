@@ -136,15 +136,15 @@ func (this *FdStream) OnEvent(event uint32) {
 				}
 				return
 			}
-			if nRead == 0 {
-				log.Println("FdStream OnEvent Recvfrom EOF")
-				err = io.EOF
-				this.onRead(nil, 0, err)
-				if this.DisableRW() {
-					this.Update(true)
-				}
-				return
-			}
+			//if nRead == 0 {
+			//	log.Println("FdStream OnEvent Recvfrom EOF")
+			//	err = io.EOF
+			//	this.onRead(nil, 0, err)
+			//	if this.DisableRW() {
+			//		this.Update(true)
+			//	}
+			//	return
+			//}
 			this.onRead(this.readBuffer, nRead, err)
 		}
 	}
