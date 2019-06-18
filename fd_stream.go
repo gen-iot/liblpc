@@ -3,6 +3,7 @@ package liblpc
 import (
 	"container/list"
 	"io"
+	"log"
 	"syscall"
 )
 
@@ -19,6 +20,7 @@ type FdStream struct {
 	writeQ     *list.List
 	onReadCb   FdStreamOnRead
 	readBuffer []byte
+	isClose    bool
 }
 
 func NewFdStream(loop *IOEvtLoop, fd int, onRead FdStreamOnRead) *FdStream {
@@ -42,6 +44,10 @@ func (this *FdStream) Close() error {
 
 func (this *FdStream) Write(data []byte, inLoop bool) {
 	if inLoop {
+		if this.isClose {
+			log.Println("FdStream closed , write will be drop")
+			return
+		}
 		if this.writeQ.Len() == 0 {
 			//write directly
 			nWrite, err := syscall.SendmsgN(this.GetFd(), data, nil, nil, syscall.MSG_NOSIGNAL)
@@ -69,6 +75,9 @@ func (this *FdStream) Write(data []byte, inLoop bool) {
 }
 
 func (this *FdStream) onRead(data []byte, len int, err error) {
+	if err != nil {
+		this.isClose = true
+	}
 	if this.onReadCb != nil {
 		this.onReadCb(this, data, len, err)
 	}
@@ -88,8 +97,10 @@ func (this *FdStream) OnEvent(event uint32) {
 
 				nWrite, err := syscall.SendmsgN(this.GetFd(), dataWillWrite, nil, nil, syscall.MSG_NOSIGNAL)
 				if err != nil {
+					log.Println("FdStream OnEvent SendmsgN got error ->", err)
 					if WOULDBLOCK(err) {
 						dataWillWrite = dataWillWrite[nWrite:]
+						front.Value = dataWillWrite
 						if this.WantWrite() {
 							this.Update(true)
 						}
@@ -111,6 +122,7 @@ func (this *FdStream) OnEvent(event uint32) {
 		for {
 			nRead, _, err := syscall.Recvfrom(this.GetFd(), this.readBuffer, syscall.MSG_NOSIGNAL)
 			if err != nil {
+				log.Println("FdStream OnEvent Recvfrom error -> ", err)
 				if WOULDBLOCK(err) {
 					if this.WantRead() {
 						this.Update(true)
@@ -124,6 +136,7 @@ func (this *FdStream) OnEvent(event uint32) {
 				return
 			}
 			if nRead == 0 {
+				log.Println("FdStream OnEvent Recvfrom EOF")
 				err = io.EOF
 				this.onRead(nil, 0, err)
 				if this.DisableRW() {
