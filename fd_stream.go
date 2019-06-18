@@ -45,13 +45,14 @@ func (this *FdStream) Close() error {
 func (this *FdStream) Write(data []byte, inLoop bool) {
 	if inLoop {
 		if this.isClose {
-			log.Println("FdStream closed , write will be drop")
+			log.Println("FdStream Write : closed , write will be drop")
 			return
 		}
 		if this.writeQ.Len() == 0 {
 			//write directly
 			nWrite, err := syscall.SendmsgN(this.GetFd(), data, nil, nil, syscall.MSG_NOSIGNAL)
 			if err != nil {
+				log.Println("FdStream Write , err is ->", err)
 				return
 			}
 			if nWrite != len(data) {
