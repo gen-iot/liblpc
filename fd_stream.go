@@ -110,9 +110,6 @@ func (this *FdStream) OnEvent(event uint32) {
 		//read
 		for {
 			nRead, _, err := syscall.Recvfrom(this.GetFd(), this.readBuffer, syscall.MSG_NOSIGNAL)
-			if nRead == 0 {
-				err = io.EOF
-			}
 			if err != nil {
 				if WOULDBLOCK(err) {
 					if this.WantRead() {
@@ -120,6 +117,14 @@ func (this *FdStream) OnEvent(event uint32) {
 					}
 					break
 				}
+				this.onRead(nil, 0, err)
+				if this.DisableRW() {
+					this.Update(true)
+				}
+				return
+			}
+			if nRead == 0 {
+				err = io.EOF
 				this.onRead(nil, 0, err)
 				if this.DisableRW() {
 					this.Update(true)
