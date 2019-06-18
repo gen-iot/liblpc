@@ -99,8 +99,8 @@ func (this *FdStream) OnEvent(event uint32) {
 
 				nWrite, err := syscall.SendmsgN(this.GetFd(), dataWillWrite, nil, nil, syscall.MSG_NOSIGNAL)
 				if err != nil {
-					log.Println("FdStream OnEvent SendmsgN got error ->", err)
 					if WOULDBLOCK(err) {
+						log.Println("FdStream OnEvent SendmsgN WOULDBLOCK")
 						dataWillWrite = dataWillWrite[nWrite:]
 						front.Value = dataWillWrite
 						if this.WantWrite() {
@@ -108,6 +108,7 @@ func (this *FdStream) OnEvent(event uint32) {
 						}
 						break
 					}
+					log.Println("FdStream OnEvent SendmsgN got error ->", err)
 					this.onRead(nil, 0, err)
 					if this.DisableRW() {
 						this.Update(true)
@@ -124,12 +125,15 @@ func (this *FdStream) OnEvent(event uint32) {
 		for {
 			nRead, _, err := syscall.Recvfrom(this.GetFd(), this.readBuffer, syscall.MSG_NOSIGNAL)
 			if err != nil {
-				log.Println("FdStream OnEvent Recvfrom error -> ", err)
+
 				if WOULDBLOCK(err) {
+					log.Println("FdStream OnEvent Recvfrom WOULDBLOCK")
 					if this.WantRead() {
 						this.Update(true)
 					}
 					break
+				} else {
+					log.Println("FdStream OnEvent Recvfrom error -> ", err)
 				}
 				this.onRead(nil, 0, err)
 				if this.DisableRW() {
