@@ -55,6 +55,7 @@ func (this *FdStream) Write(data []byte, inLoop bool) {
 				log.Println("FdStream Write , err is ->", err)
 				return
 			}
+			log.Println("FdStream Write N ->", nWrite)
 			if nWrite != len(data) {
 				data = data[nWrite:]
 				this.writeQ.PushBack(data)
@@ -136,15 +137,15 @@ func (this *FdStream) OnEvent(event uint32) {
 				}
 				return
 			}
-			//if nRead == 0 {
-			//	log.Println("FdStream OnEvent Recvfrom EOF")
-			//	err = io.EOF
-			//	this.onRead(nil, 0, err)
-			//	if this.DisableRW() {
-			//		this.Update(true)
-			//	}
-			//	return
-			//}
+			if nRead == 0 {
+				log.Println("FdStream OnEvent Recvfrom EOF")
+				err = io.EOF
+				this.onRead(nil, 0, err)
+				if this.DisableRW() {
+					this.Update(true)
+				}
+				return
+			}
 			this.onRead(this.readBuffer, nRead, err)
 		}
 	}
