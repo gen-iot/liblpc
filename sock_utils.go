@@ -128,7 +128,7 @@ func NewListenerFd(version int, sockAddr syscall.Sockaddr, backLog int, reuseAdd
 }
 
 func NewConnFd(version int, sockAddr syscall.Sockaddr) (SockFd, error) {
-	fd, err := NewTcpSocketFd(version, false, true)
+	fd, err := NewTcpSocketFd(version, true, true)
 	if err != nil {
 		return -1, err
 	}
@@ -150,7 +150,8 @@ func ResolveTcpAddr(addrS string) (addr syscall.Sockaddr, err error) {
 		return nil, err
 	}
 	v4Addr := tcpAddr.IP.To4()
-	std.Assert(len(v4Addr) == net.IPv4len, "only support ipv4 addr")
+	isV4 := len(v4Addr) == net.IPv4len
+	std.Assert(isV4, "only support ipv4 addr")
 	addr = &syscall.SockaddrInet4{
 		Port: tcpAddr.Port,
 		Addr: [4]byte{

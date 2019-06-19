@@ -59,6 +59,7 @@ func TestListener(t *testing.T) {
 	fds.SetOnConnect(func(sw StreamWriter) {
 		fmt.Println("connected!")
 	})
+	fds.StartConnect()
 	//go localConTester()
 	ioEvtLoop.Run()
 }
