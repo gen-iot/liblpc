@@ -13,11 +13,13 @@ type StreamWriter interface {
 }
 
 type FdStreamOnRead func(sw StreamWriter, data []byte, len int, err error)
+type FdStreamOnConnect func(sw StreamWriter)
 
 type FdStream struct {
 	*FdWatcher
 	writeQ     *list.List
 	onReadCb   FdStreamOnRead
+	onConnect  FdStreamOnConnect
 	readBuffer []byte
 	isClose    bool
 }
@@ -29,6 +31,7 @@ func NewFdStream(loop *IOEvtLoop, fd int, onRead FdStreamOnRead) *FdStream {
 	stream.readBuffer = loop.ioBuffer
 	stream.writeQ = list.New()
 	stream.onReadCb = onRead
+	stream.onConnect = nil
 	return stream
 }
 
@@ -39,6 +42,10 @@ func (this *FdStream) Close() error {
 		_ = this.FdWatcher.Close()
 	})
 	return nil
+}
+
+func (this *FdStream) SetOnConnect(cb FdStreamOnConnect) {
+	this.onConnect = cb
 }
 
 func (this *FdStream) Write(data []byte, inLoop bool) {
@@ -86,6 +93,12 @@ func (this *FdStream) onRead(data []byte, len int, err error) {
 
 func (this *FdStream) OnEvent(event uint32) {
 	if event&syscall.EPOLLOUT != 0 {
+		// invoke onConnect
+		if this.onConnect != nil {
+			this.onConnect(this)
+			this.onConnect = nil
+		}
+
 		if this.writeQ.Len() == 0 {
 			if this.DisableWrite() {
 				this.Update(true)

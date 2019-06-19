@@ -127,6 +127,23 @@ func NewListenerFd(version int, sockAddr syscall.Sockaddr, backLog int, reuseAdd
 	return SockFd(fd), nil
 }
 
+func NewConnFd(version int, sockAddr syscall.Sockaddr) (SockFd, error) {
+	fd, err := NewTcpSocketFd(version, false, true)
+	if err != nil {
+		return -1, err
+	}
+	err = fd.Connect(sockAddr)
+	if err == nil {
+		return fd, nil
+	}
+	errno, ok := err.(syscall.Errno)
+	std.Assert(ok, "unknown err type")
+	if errno == syscall.EINPROGRESS || WOULDBLOCK(errno) {
+		return fd, nil
+	}
+	return -1, err
+}
+
 func ResolveTcpAddr(addrS string) (addr syscall.Sockaddr, err error) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", addrS)
 	if err != nil {

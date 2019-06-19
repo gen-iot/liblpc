@@ -39,6 +39,7 @@ func NewFdWatcher(loop EventLoop, fd int, watcher IOWatcher) *FdWatcher {
 func (this *FdWatcher) Start() {
 	this.Loop().RunInLoop(func() {
 		this.WantRead()
+		this.WantWrite()
 		this.Update(true)
 	})
 }
