@@ -1,6 +1,7 @@
 package liblpc
 
 import (
+	"sync/atomic"
 	"syscall"
 )
 
@@ -19,6 +20,7 @@ type FdWatcher struct {
 	fd           int
 	event        uint32
 	attachToLoop bool
+	closeFlag    int32
 	watcher      IOWatcher
 	BaseUserData
 }
@@ -29,6 +31,7 @@ func NewFdWatcher(loop EventLoop, fd int, watcher IOWatcher) *FdWatcher {
 	w.fd = fd
 	w.event = 0
 	w.attachToLoop = false
+	w.closeFlag = 0
 	w.watcher = watcher
 	return w
 }
@@ -86,6 +89,9 @@ func (this *FdWatcher) Loop() EventLoop {
 }
 
 func (this *FdWatcher) Close() error {
+	if !atomic.CompareAndSwapInt32(&this.closeFlag, 0, 1) {
+		return nil
+	}
 	if this.attachToLoop {
 		_ = this.Loop().Poller().WatcherCtl(Del, this.watcher)
 	}
