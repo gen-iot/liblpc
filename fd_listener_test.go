@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"gitee.com/Puietel/std"
 	"net"
-	"os"
 	"testing"
 	"time"
 )
@@ -25,9 +24,9 @@ func onAccept(ln *FdListener, newFd int) {
 	stream.Start()
 }
 
-func localConTester(addr *net.UnixAddr) {
-	conn, e := net.DialUnix("unix", nil, addr)
-	std.AssertError(e, "dial unix")
+func localConTester() {
+	conn, err := net.Dial("tcp", "127.0.0.1:8001")
+	std.AssertError(err, "dial tcp 127.0.0.1:8001 failed")
 	defer std.CloseIgnoreErr(conn)
 	tm := time.After(time.Second * 10)
 	for {
@@ -43,22 +42,13 @@ func localConTester(addr *net.UnixAddr) {
 }
 
 func TestListener(t *testing.T) {
-	_ = os.Remove("test_xyz.ipc")
-	defer func() {
-		_ = os.Remove("test_xyz.ipc")
-	}()
-	loop, err := NewIOEvtLoop(1024 * 4)
-	std.AssertError(err, "new io eventloop")
-	defer std.CloseIgnoreErr(loop)
-	addr, err := net.ResolveUnixAddr("unix", "test_xyz.ipc")
-	std.AssertError(err, "resolve unix addr")
-	listener, err := net.ListenUnix("unix", addr)
-	std.AssertError(err, "listen unix")
-	f, err := listener.File()
-	std.AssertError(err, "get listener file")
-	fdl := NewFdListener(loop, int(f.Fd()), onAccept)
-	defer std.CloseIgnoreErr(fdl)
-	fdl.Start()
-	go localConTester(addr)
-	loop.Run()
+	sockaddr, err := ResolveTcpAddr("0.0.0.0:8001")
+	std.AssertError(err, "ResolveTcpAddr [0.0.0.0:8001]")
+	sockFd, err := NewListenerFd(4, sockaddr, 128, true, true)
+	ioEvtLoop, err := NewIOEvtLoop(DefaultIOEvtLoopBufferSize)
+	std.AssertError(err, "neww ioloop")
+	fdListener := NewFdListener(ioEvtLoop, int(sockFd), onAccept)
+	fdListener.Start()
+	go localConTester()
+	ioEvtLoop.Run()
 }

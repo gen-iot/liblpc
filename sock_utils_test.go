@@ -22,7 +22,7 @@ func TestResolveTcpAddr(t *testing.T) {
 func TestNewTcpSocketFd(t *testing.T) {
 	fds := make([]SockFd, 10)
 	for idx := 0; idx < 10; idx++ {
-		sockFd, err := NewTcpSocketFd(4)
+		sockFd, err := NewTcpSocketFd(4, false, true)
 		std.AssertError(err, "NewTcpSocketFd 4")
 		fds[idx] = sockFd
 		t.Log("new sock fd -> ", sockFd)
@@ -36,7 +36,7 @@ func TestNewTcpSocketFd(t *testing.T) {
 }
 
 func TestSockFd_ReuseAddr(t *testing.T) {
-	sockFd, err := NewTcpSocketFd(4)
+	sockFd, err := NewTcpSocketFd(4, false, true)
 	std.AssertError(err, "NewTcpSocketFd 4")
 	defer std.CloseIgnoreErr(Fd(sockFd))
 	std.AssertError(sockFd.ReuseAddr(true), "ReuseAddr true")
@@ -44,7 +44,7 @@ func TestSockFd_ReuseAddr(t *testing.T) {
 }
 
 func TestSockFd_ReusePort(t *testing.T) {
-	sockFd, err := NewTcpSocketFd(4)
+	sockFd, err := NewTcpSocketFd(4, false, true)
 	std.AssertError(err, "NewTcpSocketFd 4")
 	defer std.CloseIgnoreErr(Fd(sockFd))
 	std.AssertError(sockFd.ReusePort(true), "ReusePort true")
@@ -52,7 +52,7 @@ func TestSockFd_ReusePort(t *testing.T) {
 }
 
 func TestSockFd_Bind(t *testing.T) {
-	sockFd, err := NewTcpSocketFd(4)
+	sockFd, err := NewTcpSocketFd(4, false, true)
 	std.AssertError(err, "NewTcpSocketFd 4")
 	defer std.CloseIgnoreErr(Fd(sockFd))
 	addr, err := ResolveTcpAddr("0.0.0.0:8080")
@@ -61,7 +61,7 @@ func TestSockFd_Bind(t *testing.T) {
 }
 
 func TestSockFd_Listen(t *testing.T) {
-	sockFd, err := NewTcpSocketFd(4)
+	sockFd, err := NewTcpSocketFd(4, false, true)
 	std.AssertError(err, "NewTcpSocketFd 4")
 	defer std.CloseIgnoreErr(Fd(sockFd))
 	addr, err := ResolveTcpAddr("0.0.0.0:8080")
@@ -71,7 +71,7 @@ func TestSockFd_Listen(t *testing.T) {
 }
 
 func TestSockFd_Accept(t *testing.T) {
-	sockFd, err := NewTcpSocketFd(4)
+	sockFd, err := NewTcpSocketFd(4, false, true)
 	std.AssertError(err, "NewTcpSocketFd 4")
 	defer std.CloseIgnoreErr(Fd(sockFd))
 	addr, err := ResolveTcpAddr("0.0.0.0:8080")
@@ -85,7 +85,7 @@ func TestSockFd_Accept(t *testing.T) {
 }
 
 func TestSockFd_Connect(t *testing.T) {
-	sockFd, err := NewTcpSocketFd(4)
+	sockFd, err := NewTcpSocketFd(4, false, true)
 	std.AssertError(err, "NewTcpSocketFd 4")
 	defer std.CloseIgnoreErr(Fd(sockFd))
 	addr, err := ResolveTcpAddr("127.0.0.1:8080")
@@ -94,7 +94,7 @@ func TestSockFd_Connect(t *testing.T) {
 }
 
 func TestFd_NoneBlock(t *testing.T) {
-	sockFd, err := NewTcpSocketFd(4)
+	sockFd, err := NewTcpSocketFd(4, false, true)
 	std.AssertError(err, "NewTcpSocketFd 4")
 	defer std.CloseIgnoreErr(Fd(sockFd))
 	std.AssertError(Fd(sockFd).NoneBlock(true), "NoneBlock true")
@@ -102,7 +102,7 @@ func TestFd_NoneBlock(t *testing.T) {
 }
 
 func TestFd_FcntlGetFlag(t *testing.T) {
-	sockFd, err := NewTcpSocketFd(4)
+	sockFd, err := NewTcpSocketFd(4, false, true)
 	std.AssertError(err, "NewTcpSocketFd 4")
 	defer std.CloseIgnoreErr(Fd(sockFd))
 	std.AssertError(Fd(sockFd).NoneBlock(true), "NoneBlock true")
@@ -116,18 +116,18 @@ func TestFd_FcntlGetFlag(t *testing.T) {
 }
 
 func TestFd_FcntlSetFlag(t *testing.T) {
-	sockFd, err := NewTcpSocketFd(4)
+	sockFd, err := NewTcpSocketFd(4, false, true)
 	std.AssertError(err, "NewTcpSocketFd 4")
 	defer std.CloseIgnoreErr(Fd(sockFd))
 
 	flags, err := Fd(sockFd).FcntlGetFlag()
 	std.AssertError(err, "FcntlGetFlag 1")
 
-	err = Fd(sockFd).FcntlSetFlag(flags | syscall.O_NONBLOCK )
+	err = Fd(sockFd).FcntlSetFlag(flags | syscall.O_NONBLOCK)
 	std.AssertError(err, "FcntlSetFlag O_NONBLOCK")
 
 	flags, err = Fd(sockFd).FcntlGetFlag()
-	std.AssertError(err,"FcntlGetFlag 2")
+	std.AssertError(err, "FcntlGetFlag 2")
 
 	std.Assert(flags&syscall.O_NONBLOCK != 0, "flag O_NONBLOCK not match")
 

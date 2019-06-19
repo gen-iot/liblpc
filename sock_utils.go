@@ -11,7 +11,8 @@ import (
 type SockFd int
 type Fd int
 
-func NewTcpSocketFd(version int) (SockFd, error) {
+//create new socket , cloexec by default
+func NewTcpSocketFd(version int, nonblock bool, cloexec bool) (SockFd, error) {
 	syscall.ForkLock.Lock()
 	defer syscall.ForkLock.Unlock()
 	domainType := 0
@@ -23,7 +24,15 @@ func NewTcpSocketFd(version int) (SockFd, error) {
 	default:
 		std.Assert(false, "version must be 4 or 6")
 	}
-	fd, err := syscall.Socket(domainType, syscall.SOCK_STREAM, syscall.IPPROTO_TCP)
+	tp := syscall.SOCK_STREAM
+	if nonblock {
+		tp |= syscall.SOCK_NONBLOCK
+	}
+	if cloexec {
+		tp |= syscall.SOCK_CLOEXEC
+	}
+	fd, err := syscall.Socket(domainType, tp, syscall.IPPROTO_TCP)
+
 	return SockFd(fd), err
 }
 
@@ -66,6 +75,17 @@ func (this Fd) NoneBlock(enable bool) error {
 	return syscall.SetNonblock(int(this), enable)
 }
 
+// best way to set cloexec
+func (this Fd) Cloexec(enable bool) error {
+	syscall.ForkLock.Lock()
+	defer syscall.ForkLock.Unlock()
+	flags, err := this.FcntlGetFlag()
+	if err != nil {
+		return err
+	}
+	return this.FcntlSetFlag(flags | syscall.FD_CLOEXEC)
+}
+
 func (this Fd) FcntlGetFlag() (flags int, err error) {
 	r1, _, eNo := syscall.Syscall(syscall.SYS_FCNTL, uintptr(this), syscall.F_GETFL, 0)
 	if eNo != 0 {
@@ -84,6 +104,27 @@ func (this Fd) FcntlSetFlag(flag int) (err error) {
 
 func (this Fd) Close() error {
 	return syscall.Close(int(this))
+}
+
+// fd with nonblock, cloexec default
+func NewListenerFd(version int, sockAddr syscall.Sockaddr, backLog int, reuseAddr, reusePort bool) (SockFd, error) {
+	fd, err := NewTcpSocketFd(version, true, true)
+	if err != nil {
+		return -1, err
+	}
+	if err = fd.ReuseAddr(reuseAddr); err != nil {
+		return -1, err
+	}
+	if err = fd.ReusePort(reusePort); err != nil {
+		return -1, err
+	}
+	if err = fd.Bind(sockAddr); err != nil {
+		return -1, err
+	}
+	if err = fd.Listen(backLog); err != nil {
+		return -1, err
+	}
+	return SockFd(fd), nil
 }
 
 func ResolveTcpAddr(addrS string) (addr syscall.Sockaddr, err error) {

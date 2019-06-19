@@ -3,7 +3,6 @@ package liblpc
 import (
 	"container/list"
 	"io"
-	"log"
 	"syscall"
 )
 
@@ -45,17 +44,17 @@ func (this *FdStream) Close() error {
 func (this *FdStream) Write(data []byte, inLoop bool) {
 	if inLoop {
 		if this.isClose {
-			log.Println("FdStream Write : closed , write will be drop")
+			//log.Println("FdStream Write : closed , write will be drop")
 			return
 		}
 		if this.writeQ.Len() == 0 {
 			//write directly
 			nWrite, err := syscall.SendmsgN(this.GetFd(), data, nil, nil, syscall.MSG_NOSIGNAL)
 			if err != nil {
-				log.Println("FdStream Write , err is ->", err)
+				//log.Println("FdStream Write , err is ->", err)
 				return
 			}
-			log.Println("FdStream Write N ->", nWrite)
+			//log.Println("FdStream Write N ->", nWrite)
 			if nWrite != len(data) {
 				data = data[nWrite:]
 				this.writeQ.PushBack(data)
@@ -100,7 +99,7 @@ func (this *FdStream) OnEvent(event uint32) {
 				nWrite, err := syscall.SendmsgN(this.GetFd(), dataWillWrite, nil, nil, syscall.MSG_NOSIGNAL)
 				if err != nil {
 					if WOULDBLOCK(err) {
-						log.Println("FdStream OnEvent SendmsgN WOULDBLOCK")
+						//log.Println("FdStream OnEvent SendmsgN WOULDBLOCK")
 						dataWillWrite = dataWillWrite[nWrite:]
 						front.Value = dataWillWrite
 						if this.WantWrite() {
@@ -108,7 +107,7 @@ func (this *FdStream) OnEvent(event uint32) {
 						}
 						break
 					}
-					log.Println("FdStream OnEvent SendmsgN got error ->", err)
+					//log.Println("FdStream OnEvent SendmsgN got error ->", err)
 					this.onRead(nil, 0, err)
 					if this.DisableRW() {
 						this.Update(true)
@@ -127,13 +126,13 @@ func (this *FdStream) OnEvent(event uint32) {
 			if err != nil {
 
 				if WOULDBLOCK(err) {
-					log.Println("FdStream OnEvent Recvfrom WOULDBLOCK")
+					//log.Println("FdStream OnEvent Recvfrom WOULDBLOCK")
 					if this.WantRead() {
 						this.Update(true)
 					}
 					break
 				} else {
-					log.Println("FdStream OnEvent Recvfrom error -> ", err)
+					//log.Println("FdStream OnEvent Recvfrom error -> ", err)
 				}
 				this.onRead(nil, 0, err)
 				if this.DisableRW() {
@@ -142,7 +141,7 @@ func (this *FdStream) OnEvent(event uint32) {
 				return
 			}
 			if nRead == 0 {
-				log.Println("FdStream OnEvent Recvfrom EOF")
+				//log.Println("FdStream OnEvent Recvfrom EOF")
 				err = io.EOF
 				this.onRead(nil, 0, err)
 				if this.DisableRW() {
