@@ -2,6 +2,7 @@
 
 package liblpc
 
+import "C"
 import (
 	"gitee.com/Puietel/std"
 	"net"
@@ -144,21 +145,37 @@ func NewConnFd(version int, sockAddr syscall.Sockaddr) (SockFd, error) {
 	return -1, err
 }
 
-func ResolveTcpAddr(addrS string) (addr syscall.Sockaddr, err error) {
+type UnknownAFError string
+
+func (e UnknownAFError) Error() string { return "unknown Addr Type " + string(e) }
+func ResolveTcpAddr(addrS string) (syscall.Sockaddr, error) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", addrS)
 	if err != nil {
 		return nil, err
 	}
-	v4Addr := tcpAddr.IP.To4()
-	isV4 := len(v4Addr) == net.IPv4len
-	std.Assert(isV4, "only support ipv4 addr")
-	addr = &syscall.SockaddrInet4{
-		Port: tcpAddr.Port,
-		Addr: [4]byte{
-			v4Addr[0],
-			v4Addr[1],
-			v4Addr[2],
-			v4Addr[3]},
+	if ip4 := tcpAddr.IP.To4(); ip4 != nil {
+		return &syscall.SockaddrInet4{
+			Port: tcpAddr.Port,
+			Addr: [4]byte{
+				ip4[0],
+				ip4[1],
+				ip4[2],
+				ip4[3]},
+		}, nil
 	}
-	return
+	if ip6 := tcpAddr.IP.To16(); ip6 != nil {
+		addr := &syscall.SockaddrInet6{
+			Port: tcpAddr.Port,
+			Addr: [16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+		}
+		for i, b := range ip6 {
+			addr.Addr[i] = b
+		}
+		nic,err:=net.InterfaceByName(tcpAddr.Zone)
+		if err==nil{
+			addr.ZoneId=uint32(nic.Index)
+		}
+		return addr, nil
+	}
+	return nil, UnknownAFError(addrS)
 }
