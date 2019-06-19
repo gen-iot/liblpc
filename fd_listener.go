@@ -11,6 +11,29 @@ type FdListener struct {
 	onAccept FdListenerOnAccept
 }
 
+func NewListenerFd(version int, sockAddr syscall.Sockaddr, backLog int, reuseAddr, reusePort bool) (int, error) {
+	fd, err := NewTcpSocketFd(version)
+	if err != nil {
+		return -1, err
+	}
+	if err = Fd(fd).NoneBlock(true); err != nil {
+		return -1, err
+	}
+	if err = fd.ReuseAddr(reuseAddr); err != nil {
+		return -1, err
+	}
+	if err = fd.ReusePort(reusePort); err != nil {
+		return -1, err
+	}
+	if err = fd.Bind(sockAddr); err != nil {
+		return -1, err
+	}
+	if err = fd.Listen(backLog); err != nil {
+		return -1, err
+	}
+	return int(fd), nil
+}
+
 func NewFdListener(loop EventLoop, fd int, onAccept FdListenerOnAccept) *FdListener {
 	_ = syscall.SetNonblock(fd, true)
 	l := new(FdListener)

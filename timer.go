@@ -121,7 +121,7 @@ func ClockGetTime(clockId ClockId) (*syscall.Timespec, error) {
 	now := new(syscall.Timespec)
 	_, _, err := syscall.Syscall(syscall.SYS_CLOCK_GETTIME, uintptr(clockId), uintptr(unsafe.Pointer(now)), 0)
 	if err != 0 {
-		return nil, syscall.Errno(err)
+		return nil, err
 	}
 	return now, nil
 }
@@ -129,7 +129,7 @@ func ClockGetTime(clockId ClockId) (*syscall.Timespec, error) {
 func TimerFdCreate(clockId ClockId, flags int) (int, error) {
 	tmFd, _, err := syscall.Syscall(syscall.SYS_TIMERFD_CREATE, uintptr(clockId), uintptr(flags), 0)
 	if err != 0 {
-		return -1, syscall.Errno(err)
+		return -1, err
 	}
 	return int(tmFd), nil
 }
@@ -146,7 +146,7 @@ func TimerFdSetTime(fd int, flags int, new *ITimerSpec, old *ITimerSpec) error {
 func TimerFdGetTime(fd int, curr *ITimerSpec) error {
 	_, _, err := syscall.Syscall(syscall.SYS_TIMERFD_GETTIME, uintptr(fd), uintptr(unsafe.Pointer(curr)), 0)
 	if err != 0 {
-		return syscall.Errno(err)
+		return err
 	}
 	return nil
 }
