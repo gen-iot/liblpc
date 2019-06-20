@@ -108,7 +108,7 @@ func (this Fd) Close() error {
 }
 
 // fd with nonblock, cloexec default
-func NewListenerFd(version int, sockAddr syscall.Sockaddr, backLog int, reuseAddr, reusePort bool) (SockFd, error) {
+func NewListenerFd2(version int, sockAddr syscall.Sockaddr, backLog int, reuseAddr, reusePort bool) (SockFd, error) {
 	fd, err := NewTcpSocketFd(version, true, true)
 	if err != nil {
 		return -1, err
@@ -128,7 +128,16 @@ func NewListenerFd(version int, sockAddr syscall.Sockaddr, backLog int, reuseAdd
 	return SockFd(fd), nil
 }
 
-func NewConnFd(version int, sockAddr syscall.Sockaddr) (SockFd, error) {
+// fd with nonblock, cloexec default
+func NewListenerFd(addrS string, backLog int, reuseAddr, reusePort bool) (SockFd, error) {
+	addr, err := ResolveTcpAddr(addrS)
+	if err != nil {
+		return -1, err
+	}
+	return NewListenerFd2(addr.Version, addr, backLog, reuseAddr, reusePort)
+}
+
+func NewConnFd2(version int, sockAddr syscall.Sockaddr) (SockFd, error) {
 	fd, err := NewTcpSocketFd(version, true, true)
 	if err != nil {
 		return -1, err
@@ -145,12 +154,12 @@ func NewConnFd(version int, sockAddr syscall.Sockaddr) (SockFd, error) {
 	return -1, err
 }
 
-func NewConnFdSimple(addrS string) (SockFd, error) {
-	sockAddr, err := ResolveTcpAddrSimple(addrS)
+func NewConnFd(addrS string) (SockFd, error) {
+	sockAddr, err := ResolveTcpAddr(addrS)
 	if err != nil {
 		return -1, err
 	}
-	return NewConnFd(sockAddr.Version, sockAddr.Sockaddr)
+	return NewConnFd2(sockAddr.Version, sockAddr)
 }
 
 type UnknownAFError string
@@ -162,7 +171,7 @@ type SyscallSockAddr struct {
 	Version int
 }
 
-func ResolveTcpAddrSimple(addrS string) (*SyscallSockAddr, error) {
+func ResolveTcpAddr(addrS string) (*SyscallSockAddr, error) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", addrS)
 	if err != nil {
 		return nil, err
@@ -199,12 +208,4 @@ func ResolveTcpAddrSimple(addrS string) (*SyscallSockAddr, error) {
 		return addr, nil
 	}
 	return nil, UnknownAFError(addrS)
-}
-
-func ResolveTcpAddr(addrS string) (syscall.Sockaddr, error) {
-	sockAddr, err := ResolveTcpAddrSimple(addrS)
-	if err != nil {
-		return nil, err
-	}
-	return sockAddr.Sockaddr, err
 }

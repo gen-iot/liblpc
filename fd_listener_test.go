@@ -44,7 +44,7 @@ func localConTester() {
 func TestListener(t *testing.T) {
 	sockaddr, err := ResolveTcpAddr("127.0.0.1:8001")
 	std.AssertError(err, "ResolveTcpAddr [127.0.0.1:8001]")
-	sockFd, err := NewListenerFd(4, sockaddr, 128, true, true)
+	sockFd, err := NewListenerFd2(4, sockaddr, 128, true, true)
 	ioEvtLoop, err := NewIOEvtLoop(DefaultIOEvtLoopBufferSize)
 	std.AssertError(err, "new ioloop")
 	defer std.CloseIgnoreErr(ioEvtLoop)
@@ -52,8 +52,8 @@ func TestListener(t *testing.T) {
 	fdListener := NewFdListener(ioEvtLoop, int(sockFd), onAccept)
 	fdListener.Start()
 	//
-	cliFd, err := NewConnFd(4, sockaddr)
-	std.AssertError(err, "NewConnFd")
+	cliFd, err := NewConnFd2(4, sockaddr)
+	std.AssertError(err, "NewConnFd2")
 
 	fds := NewFdStream(ioEvtLoop, int(cliFd), onStream)
 	fds.SetOnConnect(func(sw StreamWriter) {

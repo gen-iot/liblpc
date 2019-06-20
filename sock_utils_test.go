@@ -4,10 +4,10 @@ package liblpc
 
 import (
 	"fmt"
+	"gitee.com/Puietel/std"
+	"net"
 	"syscall"
 	"testing"
-
-	"gitee.com/Puietel/std"
 )
 
 func TestResolveTcpAddr(t *testing.T) {
@@ -94,6 +94,11 @@ func TestSockFd_Accept(t *testing.T) {
 	std.AssertError(err, "ResolveTcpAddr 0.0.0.0:8080")
 	std.AssertError(sockFd.Bind(addr), "Bind")
 	std.AssertError(sockFd.Listen(128), "Listen")
+	go func() {
+		conn, err := net.Dial("tcp", "127.0.0.1:8080")
+		std.AssertError(err, "dial tcp 127.0.0.1:8080 failed")
+		defer std.CloseIgnoreErr(conn)
+	}()
 	nfd, sa, err := sockFd.Accept(syscall.O_CLOEXEC | syscall.O_NONBLOCK)
 	std.AssertError(err, "Accept")
 	t.Log("accept success remote addr ->", sa)
@@ -104,7 +109,7 @@ func TestSockFd_Connect(t *testing.T) {
 	sockFd, err := NewTcpSocketFd(4, false, true)
 	std.AssertError(err, "NewTcpSocketFd 4")
 	defer std.CloseIgnoreErr(Fd(sockFd))
-	addr, err := ResolveTcpAddr("127.0.0.1:8080")
+	addr, err := ResolveTcpAddr("www.baidu.com:80")
 	std.AssertError(sockFd.Connect(addr), "Connect")
 	t.Log("connect success")
 }
