@@ -145,37 +145,66 @@ func NewConnFd(version int, sockAddr syscall.Sockaddr) (SockFd, error) {
 	return -1, err
 }
 
+func NewConnFdSimple(addrS string) (SockFd, error) {
+	sockAddr, err := ResolveTcpAddrSimple(addrS)
+	if err != nil {
+		return -1, err
+	}
+	return NewConnFd(sockAddr.Version, sockAddr.Sockaddr)
+}
+
 type UnknownAFError string
 
 func (e UnknownAFError) Error() string { return "unknown Addr Type " + string(e) }
-func ResolveTcpAddr(addrS string) (syscall.Sockaddr, error) {
+
+type SyscallSockAddr struct {
+	syscall.Sockaddr
+	Version int
+}
+
+func ResolveTcpAddrSimple(addrS string) (*SyscallSockAddr, error) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", addrS)
 	if err != nil {
 		return nil, err
 	}
 	if ip4 := tcpAddr.IP.To4(); ip4 != nil {
-		return &syscall.SockaddrInet4{
-			Port: tcpAddr.Port,
-			Addr: [4]byte{
-				ip4[0],
-				ip4[1],
-				ip4[2],
-				ip4[3]},
+		return &SyscallSockAddr{
+			Sockaddr: &syscall.SockaddrInet4{
+				Port: tcpAddr.Port,
+				Addr: [4]byte{
+					ip4[0],
+					ip4[1],
+					ip4[2],
+					ip4[3]},
+			},
+			Version: 4,
 		}, nil
 	}
 	if ip6 := tcpAddr.IP.To16(); ip6 != nil {
-		addr := &syscall.SockaddrInet6{
+		sockAddr := &syscall.SockaddrInet6{
 			Port: tcpAddr.Port,
 			Addr: [16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 		}
 		for i, b := range ip6 {
-			addr.Addr[i] = b
+			sockAddr.Addr[i] = b
 		}
-		nic,err:=net.InterfaceByName(tcpAddr.Zone)
-		if err==nil{
-			addr.ZoneId=uint32(nic.Index)
+		nic, err := net.InterfaceByName(tcpAddr.Zone)
+		if err == nil {
+			sockAddr.ZoneId = uint32(nic.Index)
+		}
+		addr := &SyscallSockAddr{
+			Sockaddr: sockAddr,
+			Version:  6,
 		}
 		return addr, nil
 	}
 	return nil, UnknownAFError(addrS)
+}
+
+func ResolveTcpAddr(addrS string) (syscall.Sockaddr, error) {
+	sockAddr, err := ResolveTcpAddrSimple(addrS)
+	if err != nil {
+		return nil, err
+	}
+	return sockAddr.Sockaddr, err
 }
