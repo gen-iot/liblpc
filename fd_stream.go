@@ -55,7 +55,7 @@ func (this *FdStream) Write(data []byte, inLoop bool) {
 			//log.Println("FdStream Write : closed , write will be drop")
 			return
 		}
-		if this.writeQ.Len() == 0 || !this.writeReady {
+		if this.writeQ.Len() == 0 && this.writeReady {
 			//write directly
 			nWrite, err := syscall.SendmsgN(this.GetFd(), data, nil, nil, syscall.MSG_NOSIGNAL)
 			if err != nil {
