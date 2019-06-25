@@ -22,6 +22,7 @@ type FdStream struct {
 	onConnect  FdStreamOnConnect
 	readBuffer []byte
 	isClose    bool
+	writeReady bool
 }
 
 func NewFdStream(loop *IOEvtLoop, fd int, onRead FdStreamOnRead) *FdStream {
@@ -54,7 +55,7 @@ func (this *FdStream) Write(data []byte, inLoop bool) {
 			//log.Println("FdStream Write : closed , write will be drop")
 			return
 		}
-		if this.writeQ.Len() == 0 {
+		if this.writeQ.Len() == 0 || !this.writeReady {
 			//write directly
 			nWrite, err := syscall.SendmsgN(this.GetFd(), data, nil, nil, syscall.MSG_NOSIGNAL)
 			if err != nil {
@@ -94,9 +95,12 @@ func (this *FdStream) onRead(data []byte, len int, err error) {
 func (this *FdStream) OnEvent(event uint32) {
 	if event&syscall.EPOLLOUT != 0 {
 		// invoke onConnect
-		if this.onConnect != nil {
-			this.onConnect(this)
-			this.onConnect = nil
+
+		if !this.writeReady {
+			this.writeReady = true
+			if this.onConnect != nil {
+				this.onConnect(this)
+			}
 		}
 
 		if this.writeQ.Len() == 0 {
