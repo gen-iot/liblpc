@@ -97,6 +97,14 @@ func (this *FdStream) OnEvent(event uint32) {
 		// invoke onConnect
 
 		if !this.writeReady {
+			// todo getsockopt SO_ERROR 
+			// SEE:https://linux.die.net/man/2/connect 
+			// AT: Return Value:EINPROGRESS
+			// DOC:The socket is nonblocking and the connection cannot be completed immediately. 
+			// It is possible to select(2) or poll(2) for completion by selecting the socket for writing.
+			// After select(2) indicates writability,
+			// use getsockopt(2) to read the SO_ERROR option at level SOL_SOCKET to determine 
+			// whether connect() completed successfully (SO_ERROR is zero) or unsuccessfully (SO_ERROR is one of the usual error codes listed here, explaining the reason for the failure).
 			this.writeReady = true
 			if this.onConnect != nil {
 				this.onConnect(this)
