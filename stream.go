@@ -136,7 +136,9 @@ func (this *Stream) OnEvent(event uint32) {
 					connectErr = syscall.Errno(soErr)
 				}
 				if connectErr != nil {
-					this.onConnect(this, connectErr)
+					if this.onConnect != nil {
+						this.onConnect(this, connectErr)
+					}
 					if this.DisableRW() {
 						this.Update(true)
 					}
