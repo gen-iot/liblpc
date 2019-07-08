@@ -31,7 +31,7 @@ func TestIOEvtLoop(t *testing.T) {
 	std.AssertError(e, "MakeIpcSockpair")
 	loop, e := NewIOEvtLoop(4 * 1024)
 	std.AssertError(e, "NewIOEvtLoop")
-	stream := NewFdStream(loop, int(fds[0]),
+	stream := NewConnStream(loop, int(fds[0]),
 		func(sw StreamWriter, data []byte, len int, err error) {
 			if err == nil {
 				fmt.Println("Server onRead , data is -> ", string(data[:len]))
@@ -66,7 +66,7 @@ func TestSpawnIO(t *testing.T) {
 	cmd, err := Spawn("bin/child", fds[1])
 	std.AssertError(err, "Spawn")
 	fmt.Println("spawn success pid = ", cmd.Process.Pid)
-	stream := NewFdStream(loop, int(fds[0]),
+	stream := NewConnStream(loop, int(fds[0]),
 		func(sw StreamWriter, data []byte, len int, err error) {
 			if err == nil {
 				fmt.Println("Server onRead , data is -> ", string(data[:len]))

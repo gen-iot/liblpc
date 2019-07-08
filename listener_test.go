@@ -10,7 +10,7 @@ import (
 
 func onStream(sw StreamWriter, data []byte, len int, err error) {
 	if err != nil {
-		sw.(*FdStream).Loop().Break()
+		sw.(*Stream).Loop().Break()
 		std.CloseIgnoreErr(sw)
 		fmt.Println("onread got error ", err)
 		return
@@ -18,9 +18,9 @@ func onStream(sw StreamWriter, data []byte, len int, err error) {
 	fmt.Println("onread", string(data[:len]))
 }
 
-func onAccept(ln *FdListener, newFd int) {
+func onAccept(ln *Listener, newFd int) {
 	fmt.Println("on accept , newfd = ", newFd)
-	stream := NewFdStream(ln.Loop().(*IOEvtLoop), newFd, onStream)
+	stream := NewConnStream(ln.Loop().(*IOEvtLoop), newFd, onStream)
 	stream.Start()
 }
 
@@ -49,13 +49,13 @@ func TestListener(t *testing.T) {
 	std.AssertError(err, "new ioloop")
 	defer std.CloseIgnoreErr(ioEvtLoop)
 	//
-	fdListener := NewFdListener(ioEvtLoop, int(sockFd), onAccept)
+	fdListener := NewListener(ioEvtLoop, int(sockFd), onAccept)
 	fdListener.Start()
 	//
 	cliFd, err := NewConnFd2(4, sockaddr)
 	std.AssertError(err, "NewConnFd2")
 
-	fds := NewFdStream(ioEvtLoop, int(cliFd), onStream)
+	fds := NewClientStream(ioEvtLoop, int(cliFd), onStream)
 	fds.SetOnConnect(func(sw StreamWriter) {
 		fmt.Println("connected!")
 	})

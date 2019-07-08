@@ -4,16 +4,16 @@ import (
 	"syscall"
 )
 
-type FdListenerOnAccept func(ln *FdListener, newFd int)
+type ListenerOnAccept func(ln *Listener, newFd int)
 
-type FdListener struct {
+type Listener struct {
 	*FdWatcher
-	onAccept FdListenerOnAccept
+	onAccept ListenerOnAccept
 }
 
-func NewFdListener(loop EventLoop, fd int, onAccept FdListenerOnAccept) *FdListener {
+func NewListener(loop EventLoop, fd int, onAccept ListenerOnAccept) *Listener {
 	_ = syscall.SetNonblock(fd, true)
-	l := new(FdListener)
+	l := new(Listener)
 	l.FdWatcher = NewFdWatcher(loop, fd, l)
 	l.onAccept = onAccept
 	if l.onAccept == nil {
@@ -22,7 +22,7 @@ func NewFdListener(loop EventLoop, fd int, onAccept FdListenerOnAccept) *FdListe
 	return l
 }
 
-func (this *FdListener) OnEvent(event uint32) {
+func (this *Listener) OnEvent(event uint32) {
 	if event&syscall.EPOLLIN == 0 || this.onAccept == nil {
 		return
 	}

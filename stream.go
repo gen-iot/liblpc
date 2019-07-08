@@ -12,31 +12,53 @@ type StreamWriter interface {
 	UserDataStorage
 }
 
-type FdStreamOnRead func(sw StreamWriter, data []byte, len int, err error)
-type FdStreamOnConnect func(sw StreamWriter)
+type StreamOnRead func(sw StreamWriter, data []byte, len int, err error)
+type StreamOnConnect func(sw StreamWriter)
 
-type FdStream struct {
+type StreamMode int
+
+const (
+	ModeConn StreamMode = iota
+	ModeClient
+)
+
+type Stream struct {
 	*FdWatcher
 	writeQ     *list.List
-	onReadCb   FdStreamOnRead
-	onConnect  FdStreamOnConnect
+	onReadCb   StreamOnRead
+	onConnect  StreamOnConnect
 	readBuffer []byte
 	isClose    bool
 	writeReady bool
+	mode       StreamMode
 }
 
-func NewFdStream(loop *IOEvtLoop, fd int, onRead FdStreamOnRead) *FdStream {
+func _____newFdStream(loop *IOEvtLoop,
+	mode StreamMode, fd int,
+	rcb StreamOnRead) *Stream {
 	_ = syscall.SetNonblock(fd, true)
-	stream := new(FdStream)
+	stream := new(Stream)
 	stream.FdWatcher = NewFdWatcher(loop, fd, stream)
 	stream.readBuffer = loop.ioBuffer
 	stream.writeQ = list.New()
-	stream.onReadCb = onRead
-	stream.onConnect = nil
+	stream.mode = mode
+	stream.onReadCb = rcb
 	return stream
 }
 
-func (this *FdStream) Close() error {
+func NewConnStream(loop *IOEvtLoop, fd int, rcb StreamOnRead) *Stream {
+	return _____newFdStream(loop, ModeConn, fd, rcb)
+}
+
+func NewClientStream(loop *IOEvtLoop, fd int, rcb StreamOnRead) *Stream {
+	return _____newFdStream(loop, ModeClient, fd, rcb)
+}
+
+func (this *Stream) SetOnConnect(cb StreamOnConnect) {
+	this.onConnect = cb
+}
+
+func (this *Stream) Close() error {
 	this.Loop().RunInLoop(func() {
 		this.DisableRW()
 		this.Update(true)
@@ -45,24 +67,20 @@ func (this *FdStream) Close() error {
 	return nil
 }
 
-func (this *FdStream) SetOnConnect(cb FdStreamOnConnect) {
-	this.onConnect = cb
-}
-
-func (this *FdStream) Write(data []byte, inLoop bool) {
+func (this *Stream) Write(data []byte, inLoop bool) {
 	if inLoop {
 		if this.isClose {
-			//log.Println("FdStream Write : closed , write will be drop")
+			//log.Println("Stream Write : closed , write will be drop")
 			return
 		}
 		if this.writeQ.Len() == 0 && this.writeReady {
 			//write directly
 			nWrite, err := syscall.SendmsgN(this.GetFd(), data, nil, nil, syscall.MSG_NOSIGNAL)
 			if err != nil {
-				//log.Println("FdStream Write , err is ->", err)
+				//log.Println("Stream Write , err is ->", err)
 				return
 			}
-			//log.Println("FdStream Write N ->", nWrite)
+			//log.Println("Stream Write N ->", nWrite)
 			if nWrite != len(data) {
 				data = data[nWrite:]
 				this.writeQ.PushBack(data)
@@ -83,7 +101,7 @@ func (this *FdStream) Write(data []byte, inLoop bool) {
 	}
 }
 
-func (this *FdStream) onRead(data []byte, len int, err error) {
+func (this *Stream) onRead(data []byte, len int, err error) {
 	if err != nil {
 		this.isClose = true
 	}
@@ -92,19 +110,40 @@ func (this *FdStream) onRead(data []byte, len int, err error) {
 	}
 }
 
-func (this *FdStream) OnEvent(event uint32) {
+func (this *Stream) OnEvent(event uint32) {
 	if event&syscall.EPOLLOUT != 0 {
 		// invoke onConnect
 
 		if !this.writeReady {
-			// todo getsockopt SO_ERROR 
-			// SEE:https://linux.die.net/man/2/connect 
+
+			// SEE:https://linux.die.net/man/2/connect
 			// AT: Return Value:EINPROGRESS
-			// DOC:The socket is nonblocking and the connection cannot be completed immediately. 
+			// DOC:The socket is nonblocking and the connection cannot be completed immediately.
 			// It is possible to select(2) or poll(2) for completion by selecting the socket for writing.
 			// After select(2) indicates writability,
-			// use getsockopt(2) to read the SO_ERROR option at level SOL_SOCKET to determine 
-			// whether connect() completed successfully (SO_ERROR is zero) or unsuccessfully (SO_ERROR is one of the usual error codes listed here, explaining the reason for the failure).
+			// use getsockopt(2) to read the SO_ERROR option at level SOL_SOCKET to determine
+			// whether connect() completed successfully (SO_ERROR is zero)
+			// or unsuccessfully (SO_ERROR is one of the usual error codes listed here, explaining the reason for the failure).
+
+			if this.mode == ModeClient {
+				soErr, err := syscall.GetsockoptInt(this.fd, syscall.SOL_SOCKET, syscall.SO_ERROR)
+				var connectErr error = nil
+				if err != nil {
+					// getsockopt error
+					connectErr = err
+				} else if soErr != 0 {
+					// socket conn error
+					connectErr = syscall.Errno(soErr)
+				}
+				if connectErr != nil {
+					this.onRead(nil, 0, connectErr)
+					if this.DisableRW() {
+						this.Update(true)
+					}
+					return
+				}
+			}
+
 			this.writeReady = true
 			if this.onConnect != nil {
 				this.onConnect(this)
@@ -124,7 +163,7 @@ func (this *FdStream) OnEvent(event uint32) {
 				nWrite, err := syscall.SendmsgN(this.GetFd(), dataWillWrite, nil, nil, syscall.MSG_NOSIGNAL)
 				if err != nil {
 					if WOULDBLOCK(err) {
-						//log.Println("FdStream OnEvent SendmsgN WOULDBLOCK")
+						//log.Println("Stream OnEvent SendmsgN WOULDBLOCK")
 						dataWillWrite = dataWillWrite[nWrite:]
 						front.Value = dataWillWrite
 						if this.WantWrite() {
@@ -132,7 +171,7 @@ func (this *FdStream) OnEvent(event uint32) {
 						}
 						break
 					}
-					//log.Println("FdStream OnEvent SendmsgN got error ->", err)
+					//log.Println("Stream OnEvent SendmsgN got error ->", err)
 					this.onRead(nil, 0, err)
 					if this.DisableRW() {
 						this.Update(true)
@@ -151,13 +190,13 @@ func (this *FdStream) OnEvent(event uint32) {
 			if err != nil {
 
 				if WOULDBLOCK(err) {
-					//log.Println("FdStream OnEvent Recvfrom WOULDBLOCK")
+					//log.Println("Stream OnEvent Recvfrom WOULDBLOCK")
 					if this.WantRead() {
 						this.Update(true)
 					}
 					break
 				} else {
-					//log.Println("FdStream OnEvent Recvfrom error -> ", err)
+					//log.Println("Stream OnEvent Recvfrom error -> ", err)
 				}
 				this.onRead(nil, 0, err)
 				if this.DisableRW() {
@@ -166,7 +205,7 @@ func (this *FdStream) OnEvent(event uint32) {
 				return
 			}
 			if nRead == 0 {
-				//log.Println("FdStream OnEvent Recvfrom EOF")
+				//log.Println("Stream OnEvent Recvfrom EOF")
 				err = io.EOF
 				this.onRead(nil, 0, err)
 				if this.DisableRW() {
