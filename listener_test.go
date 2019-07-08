@@ -56,8 +56,8 @@ func TestListener(t *testing.T) {
 	std.AssertError(err, "NewConnFd2")
 
 	fds := NewClientStream(ioEvtLoop, int(cliFd), onStream)
-	fds.SetOnConnect(func(sw StreamWriter) {
-		fmt.Println("connected!")
+	fds.SetOnConnect(func(sw StreamWriter, err error) {
+		fmt.Println("connected! err:", err)
 	})
 	fds.Start()
 	//go localConTester()
