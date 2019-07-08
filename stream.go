@@ -13,7 +13,7 @@ type StreamWriter interface {
 }
 
 type StreamOnRead func(sw StreamWriter, data []byte, len int, err error)
-type StreamOnConnect func(sw StreamWriter)
+type StreamOnConnect func(sw StreamWriter, err error)
 
 type StreamMode int
 
@@ -136,7 +136,7 @@ func (this *Stream) OnEvent(event uint32) {
 					connectErr = syscall.Errno(soErr)
 				}
 				if connectErr != nil {
-					this.onRead(nil, 0, connectErr)
+					this.onConnect(this, connectErr)
 					if this.DisableRW() {
 						this.Update(true)
 					}
@@ -146,7 +146,7 @@ func (this *Stream) OnEvent(event uint32) {
 
 			this.writeReady = true
 			if this.onConnect != nil {
-				this.onConnect(this)
+				this.onConnect(this, nil)
 			}
 		}
 
