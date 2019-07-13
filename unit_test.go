@@ -32,18 +32,15 @@ func TestIOEvtLoop(t *testing.T) {
 	loop, e := NewIOEvtLoop(4 * 1024)
 	std.AssertError(e, "NewIOEvtLoop")
 	stream := NewConnStream(loop, int(fds[0]),
-		func(sw StreamWriter, data []byte, len int, err error) {
-			if err == nil {
-				fmt.Println("Server onRead , data is -> ", string(data[:len]))
-				sw.Write([]byte(time.Now().String()), true)
-			} else {
-				fmt.Println("Server onRead error -> ", err, " ,closed!")
-				_ = sw.Close()
-			}
+		func(sw StreamWriter, data []byte, len int) {
+			fmt.Println("Server onRead , data is -> ", string(data[:len]))
+			sw.Write([]byte(time.Now().String()), true)
 		})
-	defer func() {
-		_ = stream.Close()
-	}()
+	stream.SetOnClose(func(sw StreamWriter, err error) {
+		fmt.Println("Server onRead error -> ", err, " ,closed!")
+		std.CloseIgnoreErr(sw)
+	})
+	defer std.CloseIgnoreErr(stream)
 	stream.Start()
 	go func() {
 		for idx := 0; idx < 10; idx++ {
@@ -67,15 +64,14 @@ func TestSpawnIO(t *testing.T) {
 	std.AssertError(err, "Spawn")
 	fmt.Println("spawn success pid = ", cmd.Process.Pid)
 	stream := NewConnStream(loop, int(fds[0]),
-		func(sw StreamWriter, data []byte, len int, err error) {
-			if err == nil {
-				fmt.Println("Server onRead , data is -> ", string(data[:len]))
-				sw.Write([]byte(time.Now().String()), true)
-			} else {
-				fmt.Println("Server onRead error -> ", err, " ,closed!")
-				_ = sw.Close()
-			}
+		func(sw StreamWriter, data []byte, len int) {
+			fmt.Println("Server onRead , data is -> ", string(data[:len]))
+			sw.Write([]byte(time.Now().String()), true)
 		})
+	stream.SetOnClose(func(sw StreamWriter, err error) {
+		fmt.Println("Server onRead error -> ", err, " ,closed!")
+		_ = sw.Close()
+	})
 	defer func() {
 		_ = stream.Close()
 	}()

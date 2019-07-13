@@ -12,8 +12,9 @@ type StreamWriter interface {
 	UserDataStorage
 }
 
-type StreamOnRead func(sw StreamWriter, data []byte, len int, err error)
+type StreamOnRead func(sw StreamWriter, data []byte, len int)
 type StreamOnConnect func(sw StreamWriter, err error)
+type StreamOnClose func(sw StreamWriter, err error)
 
 type StreamMode int
 
@@ -27,6 +28,7 @@ type Stream struct {
 	writeQ     *list.List
 	onReadCb   StreamOnRead
 	onConnect  StreamOnConnect
+	onClose    StreamOnClose
 	readBuffer []byte
 	isClose    bool
 	writeReady bool
@@ -58,6 +60,10 @@ func (this *Stream) SetOnConnect(cb StreamOnConnect) {
 	this.onConnect = cb
 }
 
+func (this *Stream) SetOnClose(cb StreamOnClose) {
+	this.onClose = cb
+}
+
 func (this *Stream) Close() error {
 	this.Loop().RunInLoop(func() {
 		this.DisableRW()
@@ -78,8 +84,17 @@ func (this *Stream) Write(data []byte, inLoop bool) {
 			nWrite, err := syscall.SendmsgN(this.GetFd(), data, nil, nil, syscall.MSG_NOSIGNAL)
 			if err != nil {
 				//log.Println("Stream Write , err is ->", err)
+				if WOULDBLOCK(err) {
+					nWrite = 0
+					goto enqueueData
+				}
+				this.onRead(nil, 0, err)
+				if this.DisableRW() {
+					this.Update(true)
+				}
 				return
 			}
+		enqueueData:
 			//log.Println("Stream Write N ->", nWrite)
 			if nWrite != len(data) {
 				data = data[nWrite:]
@@ -102,11 +117,18 @@ func (this *Stream) Write(data []byte, inLoop bool) {
 }
 
 func (this *Stream) onRead(data []byte, len int, err error) {
+	if this.isClose {
+		return
+	}
 	if err != nil {
 		this.isClose = true
+		if this.onClose != nil {
+			this.onClose(this, err)
+		}
+		return
 	}
 	if this.onReadCb != nil {
-		this.onReadCb(this, data, len, err)
+		this.onReadCb(this, data, len)
 	}
 }
 
@@ -158,7 +180,7 @@ func (this *Stream) OnEvent(event uint32) {
 			}
 		} else {
 			//writable
-			for ; this.writeQ.Len() != 0; {
+			for this.writeQ.Len() != 0 {
 				front := this.writeQ.Front()
 				dataWillWrite := front.Value.([]byte)
 

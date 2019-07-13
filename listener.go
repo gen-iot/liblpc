@@ -1,10 +1,11 @@
 package liblpc
 
 import (
+	"gitee.com/Puietel/std"
 	"syscall"
 )
 
-type ListenerOnAccept func(ln *Listener, newFd int)
+type ListenerOnAccept func(ln *Listener, newFd int, err error)
 
 type Listener struct {
 	*FdWatcher
@@ -12,18 +13,16 @@ type Listener struct {
 }
 
 func NewListener(loop EventLoop, fd int, onAccept ListenerOnAccept) *Listener {
+	std.Assert(onAccept != nil, "onAccept callback is nil")
 	_ = syscall.SetNonblock(fd, true)
 	l := new(Listener)
 	l.FdWatcher = NewFdWatcher(loop, fd, l)
 	l.onAccept = onAccept
-	if l.onAccept == nil {
-		return l
-	}
 	return l
 }
 
 func (this *Listener) OnEvent(event uint32) {
-	if event&syscall.EPOLLIN == 0 || this.onAccept == nil {
+	if event&syscall.EPOLLIN == 0 {
 		return
 	}
 	for {
@@ -32,8 +31,9 @@ func (this *Listener) OnEvent(event uint32) {
 			if WOULDBLOCK(err) {
 				return
 			}
+			this.onAccept(this, -1, err)
 			return
 		}
-		this.onAccept(this, fd)
+		this.onAccept(this, fd, nil)
 	}
 }
