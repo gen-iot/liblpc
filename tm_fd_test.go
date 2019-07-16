@@ -2,7 +2,7 @@ package liblpc
 
 import (
 	"fmt"
-	"gitee.com/Puietel/std"
+	"gitee.com/gen-iot/std"
 	"os"
 	"syscall"
 	"testing"

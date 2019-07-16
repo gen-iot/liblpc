@@ -1,7 +1,7 @@
 package liblpc
 
 import (
-	"gitee.com/Puietel/std"
+	"gitee.com/gen-iot/std"
 	"syscall"
 )
 

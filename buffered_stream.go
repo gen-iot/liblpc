@@ -1,6 +1,6 @@
 package liblpc
 
-import "gitee.com/Puietel/std"
+import "gitee.com/gen-iot/std"
 
 type BufferedStream struct {
 	*Stream
