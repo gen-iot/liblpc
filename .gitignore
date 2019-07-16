@@ -21,3 +21,5 @@ bin/
 vendor/
 Gopkg.lock
 test_xyz.ipc
+go.sum
+Gopkg.toml
