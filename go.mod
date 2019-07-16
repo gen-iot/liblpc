@@ -1,4 +1,4 @@
-module gitee.com/gen-iot/liblpc
+module gitee.com/gen-iot/liblpc/v1
 
 go 1.12
 
