@@ -2,7 +2,6 @@
 
 package liblpc
 
-import "C"
 import (
 	"gitee.com/Puietel/std"
 	"net"
