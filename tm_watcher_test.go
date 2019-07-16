@@ -18,14 +18,14 @@ func TestTMWatcher(t *testing.T) {
 		fmt.Println("ontick ", time.Now().String())
 		countDown--
 		if countDown == 0 {
-			std.AssertError(ins.Stop(), "stop watcher")
+			std.AssertError(ins.Stop(), "stop drivenWatcher")
 			loop.Break()
 			fmt.Println("timer stop")
 		}
 	})
-	std.AssertError(err, "new timer watcher")
-	defer func() { std.AssertError(watcher.Close(), "watcher close") }()
+	std.AssertError(err, "new timer drivenWatcher")
+	defer func() { std.AssertError(watcher.Close(), "drivenWatcher close") }()
 	err = watcher.StartTimer(1000, 1000)
-	std.AssertError(err, "watcher start")
+	std.AssertError(err, "drivenWatcher start")
 	loop.Run()
 }

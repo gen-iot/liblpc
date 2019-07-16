@@ -16,12 +16,12 @@ type IOWatcher interface {
 }
 
 type FdWatcher struct {
-	loop         EventLoop
-	fd           int
-	event        uint32
-	attachToLoop bool
-	closeFlag    int32
-	watcher      IOWatcher
+	loop          EventLoop
+	fd            int
+	event         uint32
+	attachToLoop  bool
+	closeFlag     int32
+	drivenWatcher IOWatcher
 	BaseUserData
 }
 
@@ -32,7 +32,7 @@ func NewFdWatcher(loop EventLoop, fd int, watcher IOWatcher) *FdWatcher {
 	w.event = 0
 	w.attachToLoop = false
 	w.closeFlag = 0
-	w.watcher = watcher
+	w.drivenWatcher = watcher
 	return w
 }
 
@@ -46,7 +46,7 @@ func (this *FdWatcher) Start() {
 
 // helper for driven class
 func (this *FdWatcher) SetWatcher(watcher IOWatcher) {
-	this.watcher = watcher
+	this.drivenWatcher = watcher
 }
 
 func (this *FdWatcher) GetFd() int {
@@ -74,7 +74,7 @@ func (this *FdWatcher) Update(inLoop bool) {
 			mode = Add
 			this.attachToLoop = true
 		}
-		err := this.Loop().Poller().WatcherCtl(mode, this.watcher)
+		err := this.Loop().Poller().WatcherCtl(mode, this.drivenWatcher)
 		if err != nil {
 			panic(err)
 		}
@@ -94,7 +94,7 @@ func (this *FdWatcher) Close() error {
 		return nil
 	}
 	if this.attachToLoop {
-		_ = this.Loop().Poller().WatcherCtl(Del, this.watcher)
+		_ = this.Loop().Poller().WatcherCtl(Del, this.drivenWatcher)
 	}
 	return syscall.Close(this.fd)
 }

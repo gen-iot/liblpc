@@ -66,8 +66,9 @@ func (this *Stream) SetOnClose(cb StreamOnClose) {
 
 func (this *Stream) Close() error {
 	this.Loop().RunInLoop(func() {
-		this.DisableRW()
-		this.Update(true)
+		if this.DisableRW() {
+			this.Update(true)
+		}
 		_ = this.FdWatcher.Close()
 	})
 	return nil
@@ -158,11 +159,11 @@ func (this *Stream) OnEvent(event uint32) {
 					connectErr = syscall.Errno(soErr)
 				}
 				if connectErr != nil {
-					if this.onConnect != nil {
-						this.onConnect(this, connectErr)
-					}
 					if this.DisableRW() {
 						this.Update(true)
+					}
+					if this.onConnect != nil {
+						this.onConnect(this, connectErr)
 					}
 					return
 				}

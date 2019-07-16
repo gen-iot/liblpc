@@ -6,7 +6,7 @@ type UserDataStorage interface {
 }
 
 type BaseUserData struct {
-	userData     interface{}
+	userData interface{}
 }
 
 func (this *BaseUserData) GetUserData() interface{} {
