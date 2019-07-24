@@ -3,7 +3,7 @@
 package liblpc
 
 import (
-	"gitee.com/gen-iot/std"
+	"github.com/gen-iot/std"
 	"net"
 	"syscall"
 )

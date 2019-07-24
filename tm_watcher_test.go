@@ -2,7 +2,7 @@ package liblpc
 
 import (
 	"fmt"
-	"gitee.com/gen-iot/std"
+	"github.com/gen-iot/std"
 	"testing"
 	"time"
 )

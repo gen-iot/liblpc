@@ -19,6 +19,4 @@
 .idea/
 bin/
 vendor/
-Gopkg.lock
 test_xyz.ipc
-Gopkg.toml
