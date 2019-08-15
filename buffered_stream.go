@@ -4,7 +4,7 @@ import "github.com/gen-iot/std"
 
 type BufferedStream struct {
 	*Stream
-	bytesBuffer      *std.ByteBuffer
+	bytesBuffer      std.RwBuffer
 	onBufferedReadCb BufferedStreamOnRead
 }
 
