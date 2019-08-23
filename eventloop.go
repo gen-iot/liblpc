@@ -3,6 +3,7 @@ package liblpc
 import (
 	"container/list"
 	"io"
+	"log"
 	"sync/atomic"
 )
 
@@ -77,7 +78,7 @@ func (this *evtLoop) processPending() {
 	ls := this.cbQ
 	this.cbQ = list.New()
 	this.lock.Unlock()
-	for ; ls.Len() != 0; {
+	for ls.Len() != 0 {
 		front := ls.Front()
 		val := front.Value.(func())
 		ls.Remove(front)
@@ -87,7 +88,8 @@ func (this *evtLoop) processPending() {
 
 func (this *evtLoop) Break() {
 	if atomic.LoadInt32(&this.stopFlag) == 1 {
-		panic("loop already send stop signal!")
+		log.Println("note: loop already send stop signal.")
+		return
 	}
 	atomic.StoreInt32(&this.stopFlag, 1)
 	this.Notify()
