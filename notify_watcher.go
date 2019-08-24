@@ -3,7 +3,7 @@ package liblpc
 import (
 	"errors"
 	"fmt"
-	"syscall"
+	"golang.org/x/sys/unix"
 )
 
 var __notifyWatcherSendBuf []byte
@@ -20,9 +20,9 @@ type NotifyWatcher struct {
 }
 
 func NewNotifyWatcher(loop EventLoop, wakeupCb func()) (*NotifyWatcher, error) {
-	eventFd, _, errno := syscall.Syscall(syscall.SYS_EVENTFD2, 0, syscall.O_CLOEXEC|syscall.O_NONBLOCK, 0)
+	eventFd, _, errno := unix.Syscall(unix.SYS_EVENTFD2, 0, unix.O_CLOEXEC|unix.O_NONBLOCK, 0)
 	if errno != 0 {
-		_ = syscall.Close(int(eventFd))
+		_ = unix.Close(int(eventFd))
 		return nil, errors.New(fmt.Sprintf("event fd failed err = %d", errno))
 	}
 	watcher := new(NotifyWatcher)
@@ -33,7 +33,7 @@ func NewNotifyWatcher(loop EventLoop, wakeupCb func()) (*NotifyWatcher, error) {
 }
 
 func (this *NotifyWatcher) OnEvent(event uint32) {
-	_, err := syscall.Read(this.GetFd(), this.readBuf)
+	_, err := unix.Read(this.GetFd(), this.readBuf)
 	if err != nil {
 		return
 	}
@@ -43,12 +43,12 @@ func (this *NotifyWatcher) OnEvent(event uint32) {
 }
 
 func (this *NotifyWatcher) GetEvent() uint32 {
-	return syscall.EPOLLIN
+	return unix.EPOLLIN
 }
 
 func (this *NotifyWatcher) SetEvent(event uint32) {
 }
 
 func (this *NotifyWatcher) Notify() {
-	_, _ = syscall.Write(this.GetFd(), __notifyWatcherSendBuf)
+	_, _ = unix.Write(this.GetFd(), __notifyWatcherSendBuf)
 }

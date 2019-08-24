@@ -3,8 +3,8 @@ package liblpc
 import (
 	"fmt"
 	"github.com/gen-iot/std"
+	"golang.org/x/sys/unix"
 	"os"
-	"syscall"
 	"testing"
 	"time"
 )
@@ -24,10 +24,10 @@ func TestTimerFd(t *testing.T) {
 		panic(err)
 	}
 	fmt.Println("tmfd = ", tmfd)
-	err = syscall.SetNonblock(tmfd, false)
+	err = unix.SetNonblock(tmfd, false)
 	std.AssertError(err, "SetNonblock")
 	defer func() {
-		_ = syscall.Close(tmfd)
+		_ = unix.Close(tmfd)
 	}()
 	err = TimerFdSetTime(tmfd, TmFdTimerAbstime, itmspec, nil)
 	std.AssertError(err, "TimerFdSetTime")
@@ -35,7 +35,7 @@ func TestTimerFd(t *testing.T) {
 	tmForRead := new(ITimerSpec)
 	idx := 0
 	for {
-		nread, err := syscall.Read(tmfd, buf)
+		nread, err := unix.Read(tmfd, buf)
 		std.AssertError(err, "Read")
 		if nread != 8 {
 			panic("nread!=8")
@@ -49,11 +49,11 @@ func TestTimerFd(t *testing.T) {
 		if idx%2 == 0 {
 			idx = 1
 			TimerFdSetTime(tmfd, TmFdTimerAbstime, &ITimerSpec{
-				ItInterval: syscall.Timespec{
+				ItInterval: unix.Timespec{
 					Sec:  0,
 					Nsec: 0,
 				},
-				ItValue: syscall.Timespec{
+				ItValue: unix.Timespec{
 					Sec:  timespec.Sec + 3,
 					Nsec: timespec.Nsec,
 				},
@@ -61,11 +61,11 @@ func TestTimerFd(t *testing.T) {
 		} else {
 			idx = 0
 			TimerFdSetTime(tmfd, TmFdTimerAbstime, &ITimerSpec{
-				ItInterval: syscall.Timespec{
+				ItInterval: unix.Timespec{
 					Sec:  0,
 					Nsec: 0,
 				},
-				ItValue: syscall.Timespec{
+				ItValue: unix.Timespec{
 					Sec:  timespec.Sec + 1,
 					Nsec: timespec.Nsec,
 				},

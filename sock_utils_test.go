@@ -5,8 +5,8 @@ package liblpc
 import (
 	"fmt"
 	"github.com/gen-iot/std"
+	"golang.org/x/sys/unix"
 	"net"
-	"syscall"
 	"testing"
 )
 
@@ -99,7 +99,7 @@ func TestSockFd_Accept(t *testing.T) {
 		std.AssertError(err, "dial tcp 127.0.0.1:8080 failed")
 		defer std.CloseIgnoreErr(conn)
 	}()
-	nfd, sa, err := sockFd.Accept(syscall.O_CLOEXEC | syscall.O_NONBLOCK)
+	nfd, sa, err := sockFd.Accept(unix.O_CLOEXEC | unix.O_NONBLOCK)
 	std.AssertError(err, "Accept")
 	t.Log("accept success remote addr ->", sa)
 	defer std.CloseIgnoreErr(Fd(nfd))
@@ -129,11 +129,11 @@ func TestFd_FcntlGetFlag(t *testing.T) {
 	std.AssertError(Fd(sockFd).NoneBlock(true), "NoneBlock true")
 	flags, err := Fd(sockFd).FcntlGetFlag()
 	std.AssertError(err, "FcntlGetFlag 1")
-	std.Assert(flags&syscall.O_NONBLOCK != 0, "flag not match")
+	std.Assert(flags&unix.O_NONBLOCK != 0, "flag not match")
 	std.AssertError(Fd(sockFd).NoneBlock(false), "NoneBlock true")
 	flags, err = Fd(sockFd).FcntlGetFlag()
 	std.AssertError(err, "FcntlGetFlag 2")
-	std.Assert(flags&syscall.O_NONBLOCK == 0, "flag not match")
+	std.Assert(flags&unix.O_NONBLOCK == 0, "flag not match")
 }
 
 func TestFd_FcntlSetFlag(t *testing.T) {
@@ -144,12 +144,12 @@ func TestFd_FcntlSetFlag(t *testing.T) {
 	flags, err := Fd(sockFd).FcntlGetFlag()
 	std.AssertError(err, "FcntlGetFlag 1")
 
-	err = Fd(sockFd).FcntlSetFlag(flags | syscall.O_NONBLOCK)
+	err = Fd(sockFd).FcntlSetFlag(flags | unix.O_NONBLOCK)
 	std.AssertError(err, "FcntlSetFlag O_NONBLOCK")
 
 	flags, err = Fd(sockFd).FcntlGetFlag()
 	std.AssertError(err, "FcntlGetFlag 2")
 
-	std.Assert(flags&syscall.O_NONBLOCK != 0, "flag O_NONBLOCK not match")
+	std.Assert(flags&unix.O_NONBLOCK != 0, "flag O_NONBLOCK not match")
 
 }

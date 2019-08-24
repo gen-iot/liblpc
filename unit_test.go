@@ -3,8 +3,8 @@ package liblpc
 import (
 	"fmt"
 	"github.com/gen-iot/std"
+	"golang.org/x/sys/unix"
 	"os"
-	"syscall"
 	"testing"
 	"time"
 )
@@ -45,10 +45,10 @@ func TestIOEvtLoop(t *testing.T) {
 	go func() {
 		for idx := 0; idx < 10; idx++ {
 			time.Sleep(time.Second)
-			_, err := syscall.Write(fds[1], []byte(time.Now().String()))
+			_, err := unix.Write(fds[1], []byte(time.Now().String()))
 			std.AssertError(err, "Write")
 		}
-		err := syscall.Close(fds[1])
+		err := unix.Close(fds[1])
 		std.AssertError(err, "Close")
 	}()
 	loop.Run()

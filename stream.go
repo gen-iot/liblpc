@@ -2,8 +2,8 @@ package liblpc
 
 import (
 	"container/list"
+	"golang.org/x/sys/unix"
 	"io"
-	"syscall"
 )
 
 type StreamWriter interface {
@@ -38,7 +38,7 @@ type Stream struct {
 func _____newFdStream(loop *IOEvtLoop,
 	mode StreamMode, fd int,
 	rcb StreamOnRead) *Stream {
-	_ = syscall.SetNonblock(fd, true)
+	_ = unix.SetNonblock(fd, true)
 	stream := new(Stream)
 	stream.FdWatcher = NewFdWatcher(loop, fd, stream)
 	stream.readBuffer = loop.ioBuffer
@@ -82,7 +82,7 @@ func (this *Stream) Write(data []byte, inLoop bool) {
 		}
 		if this.writeQ.Len() == 0 && this.writeReady {
 			//write directly
-			nWrite, err := syscall.SendmsgN(this.GetFd(), data, nil, nil, syscall.MSG_NOSIGNAL)
+			nWrite, err := unix.SendmsgN(this.GetFd(), data, nil, nil, unix.MSG_NOSIGNAL)
 			if err != nil {
 				//log.Println("Stream Write , err is ->", err)
 				if WOULDBLOCK(err) {
@@ -134,7 +134,7 @@ func (this *Stream) onRead(data []byte, len int, err error) {
 }
 
 func (this *Stream) OnEvent(event uint32) {
-	if event&syscall.EPOLLOUT != 0 {
+	if event&unix.EPOLLOUT != 0 {
 		// invoke onConnect
 
 		if !this.writeReady {
@@ -149,14 +149,14 @@ func (this *Stream) OnEvent(event uint32) {
 			// or unsuccessfully (SO_ERROR is one of the usual error codes listed here, explaining the reason for the failure).
 
 			if this.mode == ModeClient {
-				soErr, err := syscall.GetsockoptInt(this.fd, syscall.SOL_SOCKET, syscall.SO_ERROR)
+				soErr, err := unix.GetsockoptInt(this.fd, unix.SOL_SOCKET, unix.SO_ERROR)
 				var connectErr error = nil
 				if err != nil {
 					// getsockopt error
 					connectErr = err
 				} else if soErr != 0 {
 					// socket conn error
-					connectErr = syscall.Errno(soErr)
+					connectErr = unix.Errno(soErr)
 				}
 				if connectErr != nil {
 					if this.DisableRW() {
@@ -185,7 +185,7 @@ func (this *Stream) OnEvent(event uint32) {
 				front := this.writeQ.Front()
 				dataWillWrite := front.Value.([]byte)
 
-				nWrite, err := syscall.SendmsgN(this.GetFd(), dataWillWrite, nil, nil, syscall.MSG_NOSIGNAL)
+				nWrite, err := unix.SendmsgN(this.GetFd(), dataWillWrite, nil, nil, unix.MSG_NOSIGNAL)
 				if err != nil {
 					if WOULDBLOCK(err) {
 						//log.Println("Stream OnEvent SendmsgN WOULDBLOCK")
@@ -208,10 +208,10 @@ func (this *Stream) OnEvent(event uint32) {
 		}
 	}
 
-	if event&syscall.EPOLLIN != 0 {
+	if event&unix.EPOLLIN != 0 {
 		//read
 		for {
-			nRead, _, err := syscall.Recvfrom(this.GetFd(), this.readBuffer, syscall.MSG_NOSIGNAL)
+			nRead, _, err := unix.Recvfrom(this.GetFd(), this.readBuffer, unix.MSG_NOSIGNAL)
 			if err != nil {
 
 				if WOULDBLOCK(err) {

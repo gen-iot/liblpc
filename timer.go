@@ -1,20 +1,20 @@
 package liblpc
 
 import (
-	"syscall"
+	"golang.org/x/sys/unix"
 	"unsafe"
 )
 
 type ClockId int
 
 const (
-	ClockRealtime  ClockId = 0x00
-	ClockMonotonic ClockId = 0x01
+	ClockRealtime  ClockId = unix.CLOCK_REALTIME
+	ClockMonotonic ClockId = unix.CLOCK_MONOTONIC
 )
 
 const (
-	TmFdNonblock     = syscall.O_NONBLOCK
-	TmFdCloexec      = syscall.O_CLOEXEC
+	TmFdNonblock     = unix.O_NONBLOCK
+	TmFdCloexec      = unix.O_CLOEXEC
 	TmFdTimerAbstime = 1 << 0
 )
 
@@ -45,10 +45,10 @@ func NewTimerWatcher(loop EventLoop, clockId ClockId, onTick TimerOnTick) (*Time
 }
 
 func (this *Timer) OnEvent(event uint32) {
-	if event&syscall.EPOLLIN == 0 {
+	if event&unix.EPOLLIN == 0 {
 		return
 	}
-	_, err := syscall.Read(this.GetFd(), this.readBuf)
+	_, err := unix.Read(this.GetFd(), this.readBuf)
 	if err != nil {
 		if WOULDBLOCK(err) {
 			if this.WantRead() {
@@ -101,11 +101,11 @@ func (this *Timer) StartTimer(delayMs int, intervalMs int) error {
 	return TimerFdSetTime(this.GetFd(),
 		TmFdTimerAbstime,
 		&ITimerSpec{
-			ItInterval: syscall.Timespec{
+			ItInterval: unix.Timespec{
 				Sec:  intervalSec,
 				Nsec: intervalNs,
 			},
-			ItValue: syscall.Timespec{
+			ItValue: unix.Timespec{
 				Sec:  delaySec,
 				Nsec: delayNs,
 			},
@@ -113,13 +113,13 @@ func (this *Timer) StartTimer(delayMs int, intervalMs int) error {
 }
 
 type ITimerSpec struct {
-	ItInterval syscall.Timespec
-	ItValue    syscall.Timespec
+	ItInterval unix.Timespec
+	ItValue    unix.Timespec
 }
 
-func ClockGetTime(clockId ClockId) (*syscall.Timespec, error) {
-	now := new(syscall.Timespec)
-	_, _, err := syscall.Syscall(syscall.SYS_CLOCK_GETTIME, uintptr(clockId), uintptr(unsafe.Pointer(now)), 0)
+func ClockGetTime(clockId ClockId) (*unix.Timespec, error) {
+	now := new(unix.Timespec)
+	_, _, err := unix.Syscall(unix.SYS_CLOCK_GETTIME, uintptr(clockId), uintptr(unsafe.Pointer(now)), 0)
 	if err != 0 {
 		return nil, err
 	}
@@ -127,7 +127,7 @@ func ClockGetTime(clockId ClockId) (*syscall.Timespec, error) {
 }
 
 func TimerFdCreate(clockId ClockId, flags int) (int, error) {
-	tmFd, _, err := syscall.Syscall(syscall.SYS_TIMERFD_CREATE, uintptr(clockId), uintptr(flags), 0)
+	tmFd, _, err := unix.Syscall(unix.SYS_TIMERFD_CREATE, uintptr(clockId), uintptr(flags), 0)
 	if err != 0 {
 		return -1, err
 	}
@@ -135,16 +135,16 @@ func TimerFdCreate(clockId ClockId, flags int) (int, error) {
 }
 
 func TimerFdSetTime(fd int, flags int, new *ITimerSpec, old *ITimerSpec) error {
-	_, _, err := syscall.Syscall6(syscall.SYS_TIMERFD_SETTIME,
+	_, _, err := unix.Syscall6(unix.SYS_TIMERFD_SETTIME,
 		uintptr(fd), uintptr(flags), uintptr(unsafe.Pointer(new)), uintptr(unsafe.Pointer(old)), 0, 0)
 	if err != 0 {
-		return syscall.Errno(err)
+		return unix.Errno(err)
 	}
 	return nil
 }
 
 func TimerFdGetTime(fd int, curr *ITimerSpec) error {
-	_, _, err := syscall.Syscall(syscall.SYS_TIMERFD_GETTIME, uintptr(fd), uintptr(unsafe.Pointer(curr)), 0)
+	_, _, err := unix.Syscall(unix.SYS_TIMERFD_GETTIME, uintptr(fd), uintptr(unsafe.Pointer(curr)), 0)
 	if err != 0 {
 		return err
 	}

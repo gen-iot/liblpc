@@ -1,6 +1,9 @@
 package liblpc
 
-import "syscall"
+import (
+	"golang.org/x/sys/unix"
+	"syscall"
+)
 
 // fd[0] for parent process
 // fd[1] for child process
@@ -13,8 +16,8 @@ func MakeIpcSockpair(nonblock bool) (fds [2]int, err error) {
 	for _, fd := range fds {
 		// cmd.Exec will dup fd , so we must set all paired_fd to closeOnExec
 		// duped fd doesnt contain O_CLOEXEC
-		syscall.CloseOnExec(fd)
-		_ = syscall.SetNonblock(fd, nonblock)
+		unix.CloseOnExec(fd)
+		_ = unix.SetNonblock(fd, nonblock)
 	}
 	return
 }

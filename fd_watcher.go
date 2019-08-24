@@ -1,8 +1,8 @@
 package liblpc
 
 import (
+	"golang.org/x/sys/unix"
 	"sync/atomic"
-	"syscall"
 )
 
 type IOWatcher interface {
@@ -96,36 +96,36 @@ func (this *FdWatcher) Close() error {
 	if this.attachToLoop {
 		_ = this.Loop().Poller().WatcherCtl(Del, this.drivenWatcher)
 	}
-	return syscall.Close(this.fd)
+	return unix.Close(this.fd)
 }
 
 func (this *FdWatcher) WantRead() (update bool) {
-	if this.event&syscall.EPOLLIN != 0 {
+	if this.event&unix.EPOLLIN != 0 {
 		return false
 	}
-	this.event |= syscall.EPOLLIN
+	this.event |= unix.EPOLLIN
 	return true
 }
 
 func (this *FdWatcher) DisableRead() (update bool) {
-	if this.event&syscall.EPOLLIN != 0 {
-		this.event &= ^uint32(syscall.EPOLLIN)
+	if this.event&unix.EPOLLIN != 0 {
+		this.event &= ^uint32(unix.EPOLLIN)
 		return true
 	}
 	return false
 }
 
 func (this *FdWatcher) WantWrite() (update bool) {
-	if this.event&syscall.EPOLLOUT != 0 {
+	if this.event&unix.EPOLLOUT != 0 {
 		return false
 	}
-	this.event |= syscall.EPOLLOUT
+	this.event |= unix.EPOLLOUT
 	return true
 }
 
 func (this *FdWatcher) DisableWrite() (update bool) {
-	if this.event&syscall.EPOLLOUT != 0 {
-		this.event &= ^uint32(syscall.EPOLLOUT)
+	if this.event&unix.EPOLLOUT != 0 {
+		this.event &= ^uint32(unix.EPOLLOUT)
 		return true
 	}
 

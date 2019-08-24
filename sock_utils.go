@@ -4,6 +4,7 @@ package liblpc
 
 import (
 	"github.com/gen-iot/std"
+	"golang.org/x/sys/unix"
 	"net"
 	"syscall"
 )
@@ -18,20 +19,20 @@ func NewTcpSocketFd(version int, nonblock bool, cloexec bool) (SockFd, error) {
 	domainType := 0
 	switch version {
 	case 4:
-		domainType = syscall.AF_INET
+		domainType = unix.AF_INET
 	case 6:
-		domainType = syscall.AF_INET6
+		domainType = unix.AF_INET6
 	default:
 		std.Assert(false, "version must be 4 or 6")
 	}
-	tp := syscall.SOCK_STREAM
+	tp := unix.SOCK_STREAM
 	if nonblock {
-		tp |= syscall.SOCK_NONBLOCK
+		tp |= unix.SOCK_NONBLOCK
 	}
 	if cloexec {
-		tp |= syscall.SOCK_CLOEXEC
+		tp |= unix.SOCK_CLOEXEC
 	}
-	fd, err := syscall.Socket(domainType, tp, syscall.IPPROTO_TCP)
+	fd, err := unix.Socket(domainType, tp, unix.IPPROTO_TCP)
 
 	return SockFd(fd), err
 }
@@ -41,7 +42,7 @@ func (this SockFd) ReuseAddr(enable bool) error {
 	if !enable {
 		opv = 0
 	}
-	return syscall.SetsockoptInt(int(this), syscall.SOL_SOCKET, syscall.SO_REUSEADDR, opv)
+	return unix.SetsockoptInt(int(this), unix.SOL_SOCKET, unix.SO_REUSEADDR, opv)
 }
 
 //noinspection GoSnakeCaseUsage
@@ -52,27 +53,27 @@ func (this SockFd) ReusePort(enable bool) error {
 	if !enable {
 		opv = 0
 	}
-	return syscall.SetsockoptInt(int(this), syscall.SOL_SOCKET, SO_REUSEPORT, opv)
+	return unix.SetsockoptInt(int(this), unix.SOL_SOCKET, SO_REUSEPORT, opv)
 }
 
-func (this SockFd) Bind(sockAddr syscall.Sockaddr) error {
-	return syscall.Bind(int(this), sockAddr)
+func (this SockFd) Bind(sockAddr unix.Sockaddr) error {
+	return unix.Bind(int(this), sockAddr)
 }
 
 func (this SockFd) Listen(backLog int) error {
-	return syscall.Listen(int(this), backLog)
+	return unix.Listen(int(this), backLog)
 }
 
-func (this SockFd) Accept(flags int) (nfd int, sa syscall.Sockaddr, err error) {
-	return syscall.Accept4(int(this), flags)
+func (this SockFd) Accept(flags int) (nfd int, sa unix.Sockaddr, err error) {
+	return unix.Accept4(int(this), flags)
 }
 
-func (this SockFd) Connect(addr syscall.Sockaddr) error {
-	return syscall.Connect(int(this), addr)
+func (this SockFd) Connect(addr unix.Sockaddr) error {
+	return unix.Connect(int(this), addr)
 }
 
 func (this Fd) NoneBlock(enable bool) error {
-	return syscall.SetNonblock(int(this), enable)
+	return unix.SetNonblock(int(this), enable)
 }
 
 // best way to set cloexec
@@ -83,11 +84,11 @@ func (this Fd) Cloexec(enable bool) error {
 	if err != nil {
 		return err
 	}
-	return this.FcntlSetFlag(flags | syscall.FD_CLOEXEC)
+	return this.FcntlSetFlag(flags | unix.FD_CLOEXEC)
 }
 
 func (this Fd) FcntlGetFlag() (flags int, err error) {
-	r1, _, eNo := syscall.Syscall(syscall.SYS_FCNTL, uintptr(this), syscall.F_GETFL, 0)
+	r1, _, eNo := unix.Syscall(unix.SYS_FCNTL, uintptr(this), unix.F_GETFL, 0)
 	if eNo != 0 {
 		return -1, eNo
 	}
@@ -95,7 +96,7 @@ func (this Fd) FcntlGetFlag() (flags int, err error) {
 }
 
 func (this Fd) FcntlSetFlag(flag int) (err error) {
-	_, _, eNo := syscall.Syscall(syscall.SYS_FCNTL, uintptr(this), syscall.F_SETFL, uintptr(flag))
+	_, _, eNo := unix.Syscall(unix.SYS_FCNTL, uintptr(this), unix.F_SETFL, uintptr(flag))
 	if eNo != 0 {
 		return eNo
 	}
@@ -103,11 +104,11 @@ func (this Fd) FcntlSetFlag(flag int) (err error) {
 }
 
 func (this Fd) Close() error {
-	return syscall.Close(int(this))
+	return unix.Close(int(this))
 }
 
 // fd with nonblock, cloexec default
-func NewListenerFd2(version int, sockAddr syscall.Sockaddr, backLog int, reuseAddr, reusePort bool) (SockFd, error) {
+func NewListenerFd2(version int, sockAddr unix.Sockaddr, backLog int, reuseAddr, reusePort bool) (SockFd, error) {
 	fd, err := NewTcpSocketFd(version, true, true)
 	if err != nil {
 		return -1, err
@@ -136,7 +137,7 @@ func NewListenerFd(addrS string, backLog int, reuseAddr, reusePort bool) (SockFd
 	return NewListenerFd2(addr.Version, addr, backLog, reuseAddr, reusePort)
 }
 
-func NewConnFd2(version int, sockAddr syscall.Sockaddr) (SockFd, error) {
+func NewConnFd2(version int, sockAddr unix.Sockaddr) (SockFd, error) {
 	fd, err := NewTcpSocketFd(version, true, true)
 	if err != nil {
 		return -1, err
@@ -145,9 +146,9 @@ func NewConnFd2(version int, sockAddr syscall.Sockaddr) (SockFd, error) {
 	if err == nil {
 		return fd, nil
 	}
-	errno, ok := err.(syscall.Errno)
+	errno, ok := err.(unix.Errno)
 	std.Assert(ok, "unknown err type")
-	if errno == syscall.EINPROGRESS || WOULDBLOCK(errno) {
+	if errno == unix.EINPROGRESS || WOULDBLOCK(errno) {
 		return fd, nil
 	}
 	return -1, err
@@ -166,7 +167,7 @@ type UnknownAFError string
 func (e UnknownAFError) Error() string { return "unknown Addr Type " + string(e) }
 
 type SyscallSockAddr struct {
-	syscall.Sockaddr
+	unix.Sockaddr
 	Version int
 }
 
@@ -177,7 +178,7 @@ func ResolveTcpAddr(addrS string) (*SyscallSockAddr, error) {
 	}
 	if ip4 := tcpAddr.IP.To4(); ip4 != nil {
 		return &SyscallSockAddr{
-			Sockaddr: &syscall.SockaddrInet4{
+			Sockaddr: &unix.SockaddrInet4{
 				Port: tcpAddr.Port,
 				Addr: [4]byte{
 					ip4[0],
@@ -189,7 +190,7 @@ func ResolveTcpAddr(addrS string) (*SyscallSockAddr, error) {
 		}, nil
 	}
 	if ip6 := tcpAddr.IP.To16(); ip6 != nil {
-		sockAddr := &syscall.SockaddrInet6{
+		sockAddr := &unix.SockaddrInet6{
 			Port: tcpAddr.Port,
 			Addr: [16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 		}
