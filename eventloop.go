@@ -39,13 +39,8 @@ func NewEventLoop() (EventLoop, error) {
 	if err != nil {
 		return nil, err
 	}
+	l.notify.Update(true)
 	//
-	err = l.poller.WatcherCtl(Add, l.notify)
-	if err != nil {
-		_ = l.notify.Close()
-		_ = l.poller.Close()
-		return nil, err
-	}
 	l.cbQ = list.New()
 	l.lock = NewSpinLock()
 	l.closeFlag = 0
