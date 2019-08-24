@@ -1,8 +1,6 @@
 package liblpc
 
 import (
-	"errors"
-	"fmt"
 	"golang.org/x/sys/unix"
 )
 
@@ -20,10 +18,9 @@ type NotifyWatcher struct {
 }
 
 func NewNotifyWatcher(loop EventLoop, wakeupCb func()) (*NotifyWatcher, error) {
-	eventFd, _, errno := unix.Syscall(unix.SYS_EVENTFD2, 0, unix.O_CLOEXEC|unix.O_NONBLOCK, 0)
-	if errno != 0 {
-		_ = unix.Close(int(eventFd))
-		return nil, errors.New(fmt.Sprintf("event fd failed err = %d", errno))
+	eventFd, err := unix.Eventfd(0, unix.EFD_CLOEXEC|unix.EFD_CLOEXEC)
+	if err != nil {
+		return nil, err
 	}
 	watcher := new(NotifyWatcher)
 	watcher.FdWatcher = NewFdWatcher(loop, int(eventFd), watcher)
