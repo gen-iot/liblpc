@@ -37,10 +37,10 @@ func NewFdWatcher(loop EventLoop, fd int, watcher IOWatcher) *FdWatcher {
 }
 
 func (this *FdWatcher) Start() {
-	this.Loop().RunInLoop(func() {
-		this.WantRead()
-		this.WantWrite()
-		this.Update(true)
+	this.loop.RunInLoop(func() {
+		this.drivenWatcher.WantRead()
+		this.drivenWatcher.WantWrite()
+		this.drivenWatcher.Update(true)
 	})
 }
 
@@ -63,24 +63,24 @@ func (this *FdWatcher) SetEvent(event uint32) {
 
 func (this *FdWatcher) Update(inLoop bool) {
 	if inLoop {
-		if !this.attachToLoop && this.GetEvent() == 0 {
+		if !this.attachToLoop && this.drivenWatcher.GetEvent() == 0 {
 			return
 		}
 		mode := Mod
-		if this.attachToLoop && this.GetEvent() == 0 {
+		if this.attachToLoop && this.drivenWatcher.GetEvent() == 0 {
 			mode = Del
 			this.attachToLoop = false
 		} else if !this.attachToLoop {
 			mode = Add
 			this.attachToLoop = true
 		}
-		err := this.Loop().Poller().WatcherCtl(mode, this.drivenWatcher)
+		err := this.loop.Poller().WatcherCtl(mode, this.drivenWatcher)
 		if err != nil {
 			panic(err)
 		}
 	} else {
-		this.Loop().RunInLoop(func() {
-			this.Update(true)
+		this.loop.RunInLoop(func() {
+			this.drivenWatcher.Update(true)
 		})
 	}
 }
@@ -94,7 +94,7 @@ func (this *FdWatcher) Close() error {
 		return nil
 	}
 	if this.attachToLoop {
-		_ = this.Loop().Poller().WatcherCtl(Del, this.drivenWatcher)
+		_ = this.loop.Poller().WatcherCtl(Del, this.drivenWatcher)
 	}
 	return unix.Close(this.fd)
 }
