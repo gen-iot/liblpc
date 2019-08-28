@@ -1,7 +1,9 @@
 package liblpc
 
 import (
+	"github.com/gen-iot/std"
 	"golang.org/x/sys/unix"
+	"log"
 	"sync/atomic"
 )
 
@@ -76,7 +78,9 @@ func (this *FdWatcher) Update(inLoop bool) {
 		}
 		err := this.loop.Poller().WatcherCtl(mode, this.drivenWatcher)
 		if err != nil {
-			panic(err)
+			log.Printf("fd_watcher watcherCtl fail(%v) watcher(memory:%v)\n", err, this.drivenWatcher)
+			// close watcher
+			std.CloseIgnoreErr(this.drivenWatcher)
 		}
 	} else {
 		this.loop.RunInLoop(func() {
