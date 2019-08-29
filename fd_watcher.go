@@ -78,7 +78,9 @@ func (this *FdWatcher) Update(inLoop bool) {
 		}
 		err := this.loop.Poller().WatcherCtl(mode, this.drivenWatcher)
 		if err != nil {
-			log.Printf("fd_watcher watcherCtl fail(%v) watcher(memory:%v)\n", err, this.drivenWatcher)
+			log.Printf("fd_watcher watcherCtl fd(%d) fail(%v) watcher(memory:%v)\n", this.fd, err, this.drivenWatcher)
+			// mark detachToLoop
+			this.attachToLoop = false
 			// close watcher
 			std.CloseIgnoreErr(this.drivenWatcher)
 		}
