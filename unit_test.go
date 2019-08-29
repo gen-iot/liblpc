@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/gen-iot/std"
 	"golang.org/x/sys/unix"
+	"log"
 	"os"
 	"testing"
 	"time"
@@ -24,6 +25,33 @@ func TestNotify(t *testing.T) {
 	go testEvtloop(evtLoop)
 	std.AssertError(err, "NewEventLoop")
 	evtLoop.Run()
+}
+
+func TestEpoll_WatcherCtl(t *testing.T) {
+	loop, err := NewIOEvtLoop(1024)
+	std.AssertError(err, "new io evtloop")
+	//
+	fds, err := MakeIpcSockpair(true)
+	std.AssertError(err, "make ipc sockpair .1")
+	conn := NewBufferedConnStream(loop, fds[0], func(sw StreamWriter, buf std.ReadableBuffer) {
+		log.Println("on read .1")
+	})
+	conn.Start()
+	//
+	fds2, err := MakeIpcSockpair(true)
+	std.AssertError(err, "make ipc sockpair .2")
+	conn2 := NewBufferedConnStream(loop, fds2[0], func(sw StreamWriter, buf std.ReadableBuffer) {
+		log.Println("on read .2")
+	})
+	conn2.Start()
+	//
+	// note! must close here due to system fd(id) reuse policy
+	err = unix.Close(fds[0])
+	std.AssertError(err, "close fds[0] err")
+	err = unix.Close(fds[1])
+	std.AssertError(err, "close fds[1] err")
+	//
+	loop.Run()
 }
 
 func TestIOEvtLoop(t *testing.T) {
