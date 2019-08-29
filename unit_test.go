@@ -27,7 +27,7 @@ func TestNotify(t *testing.T) {
 	evtLoop.Run()
 }
 
-func TestEpoll_WatcherCtl(t *testing.T) {
+func TestEpoll_WatcherCtl_CloseBeforeAdd(t *testing.T) {
 	loop, err := NewIOEvtLoop(1024)
 	std.AssertError(err, "new io evtloop")
 	//
@@ -44,12 +44,44 @@ func TestEpoll_WatcherCtl(t *testing.T) {
 		log.Println("on read .2")
 	})
 	conn2.Start()
-	//
-	// note! must close here due to system fd(id) reuse policy
+
+	//note! must close here due to system fd(id) reuse policy
 	err = unix.Close(fds[0])
-	std.AssertError(err, "close fds[0] err")
+	std.AssertError(err, "close (before add) fds[0] err")
+
 	err = unix.Close(fds[1])
-	std.AssertError(err, "close fds[1] err")
+	std.AssertError(err, "close (before add) fds[1] err")
+
+	loop.Run()
+}
+
+func TestEpoll_WatcherCtl_CloseAfterAdd(t *testing.T) {
+	loop, err := NewIOEvtLoop(1024)
+	std.AssertError(err, "new io evtloop")
+	//
+	fds, err := MakeIpcSockpair(true)
+	std.AssertError(err, "make ipc sockpair .1")
+	conn := NewBufferedConnStream(loop, fds[0], func(sw StreamWriter, buf std.ReadableBuffer) {
+		log.Println("on read .1")
+	})
+	conn.Start()
+	//
+	fds2, err := MakeIpcSockpair(true)
+	std.AssertError(err, "make ipc sockpair .2")
+	conn2 := NewBufferedConnStream(loop, fds2[0], func(sw StreamWriter, buf std.ReadableBuffer) {
+		log.Println("on read .2")
+	})
+	conn2.Start()
+	go func() {
+		time.Sleep(time.Second * 2)
+		// note! must close here due to system fd(id) reuse policy
+		err = unix.Close(fds[0])
+		std.AssertError(err, "close fds[0] err")
+		err = conn.Close()
+		fmt.Println("conn close (after add) err:", err)
+		err = unix.Close(fds[1])
+		std.AssertError(err, "close fds[1] err")
+	}()
 	//
 	loop.Run()
 }
