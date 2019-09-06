@@ -4,6 +4,7 @@ import (
 	"container/list"
 	"golang.org/x/sys/unix"
 	"io"
+	"log"
 )
 
 type StreamWriter interface {
@@ -39,6 +40,7 @@ func _____newFdStream(loop *IOEvtLoop,
 	mode StreamMode, fd int,
 	rcb StreamOnRead) *Stream {
 	_ = unix.SetNonblock(fd, true)
+	log.Println("fdstream open fd", fd)
 	stream := new(Stream)
 	stream.FdWatcher = NewFdWatcher(loop, fd, stream)
 	stream.readBuffer = loop.ioBuffer
@@ -66,6 +68,10 @@ func (this *Stream) SetOnClose(cb StreamOnClose) {
 
 func (this *Stream) Close() error {
 	this.Loop().RunInLoop(func() {
+		if !this.isClose {
+			this.onRead(nil, 0, io.EOF)
+		}
+		this.isClose = true
 		if this.DisableRW() {
 			this.Update(true)
 		}
@@ -77,7 +83,7 @@ func (this *Stream) Close() error {
 func (this *Stream) Write(data []byte, inLoop bool) {
 	if inLoop {
 		if this.isClose {
-			//log.Println("Stream Write : closed , write will be drop")
+			log.Println("Stream Write : closed , write will be drop, fd=", this.GetFd())
 			return
 		}
 		if this.writeQ.Len() == 0 && this.writeReady {
@@ -134,6 +140,9 @@ func (this *Stream) onRead(data []byte, len int, err error) {
 }
 
 func (this *Stream) OnEvent(event uint32) {
+	if this.isClose {
+		return
+	}
 	if event&unix.EPOLLOUT != 0 {
 		// invoke onConnect
 

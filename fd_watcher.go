@@ -102,6 +102,7 @@ func (this *FdWatcher) Close() error {
 	if this.attachToLoop {
 		_ = this.loop.Poller().WatcherCtl(Del, this.drivenWatcher)
 	}
+	log.Println("loop close fd ->", this.fd)
 	return unix.Close(this.fd)
 }
 
