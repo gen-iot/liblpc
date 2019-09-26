@@ -3,7 +3,6 @@ package liblpc
 import (
 	"container/list"
 	"io"
-	"log"
 	"sync/atomic"
 )
 
@@ -83,7 +82,7 @@ func (this *evtLoop) processPending() {
 
 func (this *evtLoop) Break() {
 	if atomic.LoadInt32(&this.stopFlag) == 1 {
-		log.Println("note: loop already send stop signal.")
+		stdLog("note: loop already send stop signal.")
 		return
 	}
 	atomic.StoreInt32(&this.stopFlag, 1)

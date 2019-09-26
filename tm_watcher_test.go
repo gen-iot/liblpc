@@ -15,12 +15,12 @@ func TestTMWatcher(t *testing.T) {
 	}()
 	countDown := 5
 	watcher, err := NewTimerWatcher(loop, ClockMonotonic, func(ins *Timer) {
-		fmt.Println("ontick ", time.Now().String())
+		stdLog("ontick ", time.Now().String())
 		countDown--
 		if countDown == 0 {
 			std.AssertError(ins.Stop(), "stop drivenWatcher")
 			loop.Break()
-			fmt.Println("timer stop")
+			stdLog("timer stop")
 		}
 	})
 	std.AssertError(err, "new timer drivenWatcher")

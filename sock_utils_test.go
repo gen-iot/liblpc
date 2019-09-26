@@ -13,7 +13,7 @@ import (
 func TestResolveTcpAddr(t *testing.T) {
 	addr, err := ResolveTcpAddr("192.168.50.1:4040")
 	std.AssertError(err, "192.168.50.1:4040")
-	fmt.Println(addr)
+	stdLog(addr)
 
 	_, err = ResolveTcpAddr("192.168.50.100")
 	std.Assert(err != nil, "should failed")
@@ -21,15 +21,15 @@ func TestResolveTcpAddr(t *testing.T) {
 func TestResolveTcp6Addr(t *testing.T) {
 	addr, err := ResolveTcpAddr("[::1]:4040")
 	std.AssertError(err, "[::1]:4040")
-	fmt.Println(addr)
+	stdLog(addr)
 
 	addr, err = ResolveTcpAddr("[::1%4]:4040")
 	std.AssertError(err, "[::1]:4040")
-	fmt.Println(addr)
+	stdLog(addr)
 
 	addr, err = ResolveTcpAddr("[::1%eth0]:4040")
 	std.AssertError(err, "[::1]:4040")
-	fmt.Println(addr)
+	stdLog(addr)
 
 	_, err = ResolveTcpAddr("[::1]")
 	std.Assert(err != nil, "should failed")

@@ -3,7 +3,6 @@ package liblpc
 import (
 	"github.com/gen-iot/std"
 	"golang.org/x/sys/unix"
-	"log"
 	"sync/atomic"
 )
 
@@ -78,7 +77,7 @@ func (this *FdWatcher) Update(inLoop bool) {
 		}
 		err := this.loop.Poller().WatcherCtl(mode, this.drivenWatcher)
 		if err != nil {
-			log.Printf("fd_watcher watcherCtl fd(%d) fail(%v) watcher(memory:%v)\n", this.fd, err, this.drivenWatcher)
+			stdLogf("fd_watcher watcherCtl fd(%d) fail(%v) watcher(memory:%v)\n", this.fd, err, this.drivenWatcher)
 			// mark detachToLoop
 			this.attachToLoop = false
 			// close watcher
@@ -102,7 +101,7 @@ func (this *FdWatcher) Close() error {
 	if this.attachToLoop {
 		_ = this.loop.Poller().WatcherCtl(Del, this.drivenWatcher)
 	}
-	log.Println("loop close fd ->", this.fd)
+	// stdLog("loop close fd ->", this.fd)
 	return unix.Close(this.fd)
 }
 

@@ -4,7 +4,6 @@ import (
 	"container/list"
 	"golang.org/x/sys/unix"
 	"io"
-	"log"
 )
 
 type StreamWriter interface {
@@ -40,7 +39,7 @@ func _____newFdStream(loop *IOEvtLoop,
 	mode StreamMode, fd int,
 	rcb StreamOnRead) *Stream {
 	_ = unix.SetNonblock(fd, true)
-	log.Println("fdstream open fd", fd)
+	stdLog("fdstream open fd", fd)
 	stream := new(Stream)
 	stream.FdWatcher = NewFdWatcher(loop, fd, stream)
 	stream.readBuffer = loop.ioBuffer
@@ -83,14 +82,14 @@ func (this *Stream) Close() error {
 func (this *Stream) Write(data []byte, inLoop bool) {
 	if inLoop {
 		if this.isClose {
-			log.Println("Stream Write : closed , write will be drop, fd=", this.GetFd())
+			stdLog("Stream Write : closed , write will be drop, fd=", this.GetFd())
 			return
 		}
 		if this.writeQ.Len() == 0 && this.writeReady {
 			//write directly
 			nWrite, err := unix.SendmsgN(this.GetFd(), data, nil, nil, unix.MSG_NOSIGNAL)
 			if err != nil {
-				//log.Println("Stream Write , err is ->", err)
+				stdLog("Stream Write , err is ->", err)
 				if WOULDBLOCK(err) {
 					nWrite = 0
 					goto enqueueData
@@ -102,7 +101,7 @@ func (this *Stream) Write(data []byte, inLoop bool) {
 				return
 			}
 		enqueueData:
-			//log.Println("Stream Write N ->", nWrite)
+			stdLog("Stream Write N ->", nWrite)
 			if nWrite != len(data) {
 				data = data[nWrite:]
 				this.writeQ.PushBack(data)
@@ -197,7 +196,7 @@ func (this *Stream) OnEvent(event uint32) {
 				nWrite, err := unix.SendmsgN(this.GetFd(), dataWillWrite, nil, nil, unix.MSG_NOSIGNAL)
 				if err != nil {
 					if WOULDBLOCK(err) {
-						//log.Println("Stream OnEvent SendmsgN WOULDBLOCK")
+						stdLog("Stream OnEvent SendmsgN WOULDBLOCK")
 						dataWillWrite = dataWillWrite[nWrite:]
 						front.Value = dataWillWrite
 						if this.WantWrite() {
@@ -205,7 +204,7 @@ func (this *Stream) OnEvent(event uint32) {
 						}
 						break
 					}
-					//log.Println("Stream OnEvent SendmsgN got error ->", err)
+					stdLog("Stream OnEvent SendmsgN got error ->", err)
 					this.onRead(nil, 0, err)
 					if this.DisableRW() {
 						this.Update(true)
@@ -224,13 +223,13 @@ func (this *Stream) OnEvent(event uint32) {
 			if err != nil {
 
 				if WOULDBLOCK(err) {
-					//log.Println("Stream OnEvent Recvfrom WOULDBLOCK")
+					stdLog("Stream OnEvent Recvfrom WOULDBLOCK")
 					if this.WantRead() {
 						this.Update(true)
 					}
 					break
 				} else {
-					//log.Println("Stream OnEvent Recvfrom error -> ", err)
+					stdLog("Stream OnEvent Recvfrom error -> ", err)
 				}
 				this.onRead(nil, 0, err)
 				if this.DisableRW() {
@@ -239,7 +238,7 @@ func (this *Stream) OnEvent(event uint32) {
 				return
 			}
 			if nRead == 0 {
-				//log.Println("Stream OnEvent Recvfrom EOF")
+				stdLog("Stream OnEvent Recvfrom EOF")
 				err = io.EOF
 				this.onRead(nil, 0, err)
 				if this.DisableRW() {

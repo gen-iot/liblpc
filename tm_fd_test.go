@@ -11,7 +11,7 @@ import (
 
 func TestTimerFd(t *testing.T) {
 	clock := ClockMonotonic
-	fmt.Println("pid = ", os.Getpid())
+	stdLog("pid = ", os.Getpid())
 	now, err := ClockGetTime(clock)
 	std.AssertError(err, "ClockGetTime")
 	itmspec := new(ITimerSpec)
@@ -23,7 +23,7 @@ func TestTimerFd(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("tmfd = ", tmfd)
+	stdLog("tmfd = ", tmfd)
 	err = unix.SetNonblock(tmfd, false)
 	std.AssertError(err, "SetNonblock")
 	defer func() {
@@ -40,10 +40,10 @@ func TestTimerFd(t *testing.T) {
 		if nread != 8 {
 			panic("nread!=8")
 		}
-		fmt.Println("now is -> ", time.Now().String())
+		stdLog("now is -> ", time.Now().String())
 		err = TimerFdGetTime(tmfd, tmForRead)
 		std.AssertError(err, "TimerFdGetTime")
-		fmt.Println("get time from tmfd -> ", *tmForRead)
+		stdLog("get time from tmfd -> ", *tmForRead)
 		timespec, err := ClockGetTime(clock)
 		std.AssertError(err, "ClockGetTime")
 		if idx%2 == 0 {

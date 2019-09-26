@@ -10,16 +10,16 @@ import (
 
 func onAccept(ln *Listener, newFd int, err error) {
 	if err != nil {
-		fmt.Println("listener error:", err)
+		stdLog("listener error:", err)
 		std.CloseIgnoreErr(ln)
 		return
 	}
-	fmt.Println("on accept , newfd = ", newFd)
+	stdLog("on accept , newfd = ", newFd)
 	stream := NewConnStream(ln.Loop().(*IOEvtLoop), newFd, func(sw StreamWriter, data []byte, len int) {
-		fmt.Println("onread", string(data[:len]))
+		stdLog("onread", string(data[:len]))
 	})
 	stream.SetOnClose(func(sw StreamWriter, err error) {
-		fmt.Println("closed! err:", err)
+		stdLog("closed! err:", err)
 		sw.(*Stream).Loop().Break()
 		std.CloseIgnoreErr(sw)
 	})
@@ -58,21 +58,21 @@ func TestListener(t *testing.T) {
 	std.AssertError(err, "NewConnFd2")
 
 	fds := NewClientStream(ioEvtLoop, int(cliFd), func(sw StreamWriter, data []byte, len int) {
-		fmt.Println("onread", string(data[:len]))
+		stdLog("onread", string(data[:len]))
 	})
 	fds.SetOnConnect(func(sw StreamWriter, err error) {
 		if err != nil {
-			fmt.Println("connected! err:", err)
+			stdLog("connected! err:", err)
 			return
 		}
 		time.AfterFunc(time.Second*3, func() {
 			std.CloseIgnoreErr(sw)
 		})
-		fmt.Println("connect success, will close after 3s")
+		stdLog("connect success, will close after 3s")
 
 	})
 	fds.SetOnClose(func(sw StreamWriter, err error) {
-		fmt.Println("closed! err:", err)
+		stdLog("closed! err:", err)
 		sw.(*Stream).Loop().Break()
 		std.CloseIgnoreErr(sw)
 	})

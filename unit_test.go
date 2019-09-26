@@ -15,7 +15,7 @@ func testEvtloop(evtLoop EventLoop) {
 	for {
 		time.Sleep(time.Second)
 		evtLoop.RunInLoop(func() {
-			fmt.Println(time.Now().String())
+			stdLog(time.Now().String())
 		})
 	}
 }
@@ -34,14 +34,14 @@ func TestEpoll_WatcherCtl_CloseBeforeAdd(t *testing.T) {
 	fds, err := MakeIpcSockpair(true)
 	std.AssertError(err, "make ipc sockpair .1")
 	conn := NewBufferedConnStream(loop, fds[0], func(sw StreamWriter, buf std.ReadableBuffer) {
-		log.Println("on read .1")
+		stdLog("on read .1")
 	})
 	conn.Start()
 	//
 	fds2, err := MakeIpcSockpair(true)
 	std.AssertError(err, "make ipc sockpair .2")
 	conn2 := NewBufferedConnStream(loop, fds2[0], func(sw StreamWriter, buf std.ReadableBuffer) {
-		log.Println("on read .2")
+		stdLog("on read .2")
 	})
 	conn2.Start()
 
@@ -62,14 +62,14 @@ func TestEpoll_WatcherCtl_CloseAfterAdd(t *testing.T) {
 	fds, err := MakeIpcSockpair(true)
 	std.AssertError(err, "make ipc sockpair .1")
 	conn := NewBufferedConnStream(loop, fds[0], func(sw StreamWriter, buf std.ReadableBuffer) {
-		log.Println("on read .1")
+		stdLog("on read .1")
 	})
 	conn.Start()
 	//
 	fds2, err := MakeIpcSockpair(true)
 	std.AssertError(err, "make ipc sockpair .2")
 	conn2 := NewBufferedConnStream(loop, fds2[0], func(sw StreamWriter, buf std.ReadableBuffer) {
-		log.Println("on read .2")
+		stdLog("on read .2")
 	})
 	conn2.Start()
 	go func() {
@@ -78,7 +78,7 @@ func TestEpoll_WatcherCtl_CloseAfterAdd(t *testing.T) {
 		err = unix.Close(fds[0])
 		std.AssertError(err, "close fds[0] err")
 		err = conn.Close()
-		fmt.Println("conn close (after add) err:", err)
+		stdLog("conn close (after add) err:", err)
 		err = unix.Close(fds[1])
 		std.AssertError(err, "close fds[1] err")
 	}()
@@ -93,11 +93,11 @@ func TestIOEvtLoop(t *testing.T) {
 	std.AssertError(e, "NewIOEvtLoop")
 	stream := NewConnStream(loop, int(fds[0]),
 		func(sw StreamWriter, data []byte, len int) {
-			fmt.Println("Server onRead , data is -> ", string(data[:len]))
+			stdLog("Server onRead , data is -> ", string(data[:len]))
 			sw.Write([]byte(time.Now().String()), true)
 		})
 	stream.SetOnClose(func(sw StreamWriter, err error) {
-		fmt.Println("Server onRead error -> ", err, " ,closed!")
+		stdLog("Server onRead error -> ", err, " ,closed!")
 		std.CloseIgnoreErr(sw)
 	})
 	defer std.CloseIgnoreErr(stream)
@@ -115,21 +115,21 @@ func TestIOEvtLoop(t *testing.T) {
 }
 
 func TestSpawnIO(t *testing.T) {
-	fmt.Println("current pid = ", os.Getpid())
+	stdLog("current pid = ", os.Getpid())
 	fds, err := MakeIpcSockpair(true)
 	std.AssertError(err, "MakeIpcSockpair")
 	loop, err := NewIOEvtLoop(2 * 1024 * 1024)
 	std.AssertError(err, "NewIOEvtLoop")
 	cmd, err := Spawn("bin/child", fds[1])
 	std.AssertError(err, "Spawn")
-	fmt.Println("spawn success pid = ", cmd.Process.Pid)
+	stdLog("spawn success pid = ", cmd.Process.Pid)
 	stream := NewConnStream(loop, int(fds[0]),
 		func(sw StreamWriter, data []byte, len int) {
-			fmt.Println("Server onRead , data is -> ", string(data[:len]))
+			stdLog("Server onRead , data is -> ", string(data[:len]))
 			sw.Write([]byte(time.Now().String()), true)
 		})
 	stream.SetOnClose(func(sw StreamWriter, err error) {
-		fmt.Println("Server onRead error -> ", err, " ,closed!")
+		stdLog("Server onRead error -> ", err, " ,closed!")
 		_ = sw.Close()
 	})
 	defer func() {
@@ -138,7 +138,7 @@ func TestSpawnIO(t *testing.T) {
 	stream.Start()
 	go func() {
 		err := cmd.Wait()
-		fmt.Println("child exit error -> ", err)
+		stdLog("child exit error -> ", err)
 
 	}()
 	loop.Run()

@@ -3,7 +3,6 @@
 package liblpc
 
 import (
-	"fmt"
 	"golang.org/x/sys/unix"
 	"sync"
 )
@@ -72,7 +71,7 @@ func (this *Epoll) Poll(msec int) error {
 		fd := int(epEvent.Fd)
 		watcher := this.getWatcher(fd)
 		if watcher == nil {
-			fmt.Println("unknown fd = ", fd, ", drivenWatcher not found")
+			stdLog("unknown fd = ", fd, ", drivenWatcher not found")
 			continue
 		}
 		watcher.OnEvent(epEvent.Events)
