@@ -221,7 +221,6 @@ func (this *Stream) OnEvent(event uint32) {
 		for {
 			nRead, _, err := unix.Recvfrom(this.GetFd(), this.readBuffer, unix.MSG_NOSIGNAL)
 			if err != nil {
-
 				if WOULDBLOCK(err) {
 					stdLog("Stream OnEvent Recvfrom WOULDBLOCK")
 					if this.WantRead() {
