@@ -63,11 +63,25 @@ func (this *TimeWheel) onNewEntry(entry BucketEntry) {
 	}
 }
 
+func (this *TimeWheel) readAllEntries(ctx context.Context) {
+	for {
+		select {
+		case entry := <-this.cachedEntries:
+			this.onNewEntry(entry)
+		case <-ctx.Done():
+			return
+		default:
+			return
+		}
+	}
+}
+
 func (this *TimeWheel) Execute(ctx context.Context) {
 	partTimeout := time.Duration(this.partTimeout) * time.Second
 	timer := time.NewTimer(partTimeout)
 	defer timer.Stop()
 	defer close(this.cachedEntries)
+
 	for {
 		select {
 		case <-timer.C:
@@ -75,6 +89,7 @@ func (this *TimeWheel) Execute(ctx context.Context) {
 			timer.Reset(partTimeout)
 		case entry := <-this.cachedEntries:
 			this.onNewEntry(entry)
+			this.readAllEntries(ctx)
 		case <-ctx.Done():
 			stdLog("time wheel exit, due to ctx done")
 			return
