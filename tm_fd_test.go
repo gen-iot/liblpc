@@ -1,7 +1,6 @@
 package liblpc
 
 import (
-	"fmt"
 	"github.com/gen-iot/std"
 	"golang.org/x/sys/unix"
 	"os"
@@ -48,7 +47,7 @@ func TestTimerFd(t *testing.T) {
 		std.AssertError(err, "ClockGetTime")
 		if idx%2 == 0 {
 			idx = 1
-			TimerFdSetTime(tmfd, TmFdTimerAbstime, &ITimerSpec{
+			std.AssertError(TimerFdSetTime(tmfd, TmFdTimerAbstime, &ITimerSpec{
 				ItInterval: unix.Timespec{
 					Sec:  0,
 					Nsec: 0,
@@ -57,10 +56,10 @@ func TestTimerFd(t *testing.T) {
 					Sec:  timespec.Sec + 3,
 					Nsec: timespec.Nsec,
 				},
-			}, nil)
+			}, nil), "err 1")
 		} else {
 			idx = 0
-			TimerFdSetTime(tmfd, TmFdTimerAbstime, &ITimerSpec{
+			std.AssertError(TimerFdSetTime(tmfd, TmFdTimerAbstime, &ITimerSpec{
 				ItInterval: unix.Timespec{
 					Sec:  0,
 					Nsec: 0,
@@ -69,7 +68,7 @@ func TestTimerFd(t *testing.T) {
 					Sec:  timespec.Sec + 1,
 					Nsec: timespec.Nsec,
 				},
-			}, nil)
+			}, nil), "err 2")
 		}
 	}
 }

@@ -3,7 +3,6 @@
 package liblpc
 
 import (
-	"fmt"
 	"github.com/gen-iot/std"
 	"golang.org/x/sys/unix"
 	"net"

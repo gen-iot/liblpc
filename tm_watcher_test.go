@@ -1,7 +1,6 @@
 package liblpc
 
 import (
-	"fmt"
 	"github.com/gen-iot/std"
 	"testing"
 	"time"
