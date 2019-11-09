@@ -45,9 +45,9 @@ std.AssertError(err, "new io event loop")
 // just call loop.Break in anywhere
 loop.Break()
 ```
-📌`Loop.'Close' can't stop a loop but Loop.'Break' can.`
+📌**Loop.'Close' can't stop a loop but Loop.'Break' can.**
 
-📌`Loop.'Close' use to cleanup a loop`
+📌**Loop.'Close' use to cleanup a loop**
 
 **Cleanup a loop**
 
@@ -87,7 +87,7 @@ listener.Start()
 ### Accept New Conn Stream:
 
 ```go
-// 📌note: in accept callback
+// 📌Note: in accept callback
 stream := liblpc.NewConnStream(
   ln.Loop().(*liblpc.IOEvtLoop), // cast Loop to IOEventLoop 
   newFd,                         // incoming fd
@@ -113,9 +113,9 @@ stream.SetOnClose(func(sw liblpc.StreamWriter, err error) {
 })
 stream.Start()
 ```
-📌`Stream.'Close' is safe to invoke multi times`
+📌**Stream.'Close' is safe to invoke multi times**
 
-📌`Anytime you can't find out whether if Stream is 'Closing' or really been 'Closed',Just invoke  Stream.'Close'`
+📌**Anytime you can't find out whether if Stream is 'Closing' or really been 'Closed',Just invoke  Stream.'Close'**
 
 
 ### Example: Simple **Read/Write/Close** 
@@ -125,73 +125,73 @@ stream.Start()
 package main
 
 import (
-	"github.com/gen-iot/liblpc"
-	"github.com/gen-iot/std"
-	"log"
+  "github.com/gen-iot/liblpc"
+  "github.com/gen-iot/std"
+  "log"
 )
 
 func onStreamRead(sw liblpc.StreamWriter, data []byte, len int) {
   // print client data in string format
-	log.Println("on read:", string(data[:len]))
-	_ = sw.Close()
+  log.Println("on read:", string(data[:len]))
+  _ = sw.Close()
 }
 
 func onStreamClose(sw liblpc.StreamWriter, err error) {
-	log.Println("conn closed,err:", err)
-	_ = sw.Close() // close remote client
+  log.Println("conn closed,err:", err)
+  _ = sw.Close() // close remote client
 }
 
 func onAccept(ln *liblpc.Listener, newFd int, err error) {
-	if err != nil {
-		log.Printf("listener got error:%v\n", err)
-		return
-	}
-	stream := liblpc.NewConnStream(
-    ln.Loop().(*liblpc.IOEvtLoop), // cast Loop to IOEventLoop 
+  if err != nil {
+    log.Printf("listener got error:%v\n", err)
+    return
+  }
+  stream := liblpc.NewConnStream(
+    ln.Loop().(*liblpc.IOEvtLoop), // cast Loop to   IOEventLoop 
     newFd,                         // incoming fd
     onStreamRead,                  // read callback
     )
-	stream.SetOnClose(onStreamClose) // register close callback
-	stream.Start()
+  stream.SetOnClose(onStreamClose) // register close   callback
+  stream.Start()
 }
 
 func simpleClient(loop *liblpc.IOEvtLoop, addr string) {
-	cliFd, err := liblpc.NewConnFd(addr)
-	std.AssertError(err, "new client fd failed")
-	stream := liblpc.NewConnStream(loop, int(cliFd), nil)
-	stream.SetOnConnect(func(sw liblpc.StreamWriter, err error) {
-		sw.Write([]byte("hello world!"), true)
-	})
-	stream.SetOnClose(func(sw liblpc.StreamWriter, err error) {
+  cliFd, err := liblpc.NewConnFd(addr)
+  std.AssertError(err, "new client fd failed")
+  stream := liblpc.NewConnStream(loop, int(cliFd), nil)
+  stream.SetOnConnect(func(sw liblpc.StreamWriter, err   error) {
+    sw.Write([]byte("hello world!"), true)
+  })
+  stream.SetOnClose(func(sw liblpc.StreamWriter, err error)   {
     log.Println("client close :", err)
     // close itself
     _ = sw.Close()
-		// break loop...
-		loop.Break()
-	})
-	stream.Start()
+    // break loop...
+    loop.Break()
+  })
+  stream.Start()
 }
 
 func main() {
-	loop, err := liblpc.NewIOEvtLoop(1024 * 4)
-	std.AssertError(err, "new event loop")
-	defer std.CloseIgnoreErr(loop)
-	// create listen fd first!
-	listenerFd, err := liblpc.NewListenerFd(
-		"127.0.0.1:12345", // serve at
-		1024,              // backlog
-		true,              // enable reuse addr
-		true,              // enable reuse port
-	)
-	std.AssertError(err, "new listener fd")
-	// new listener
-	listener := liblpc.NewListener(loop, int(listenerFd), onAccept)
-	defer std.CloseIgnoreErr(listener)
-	listener.Start()
-	// start simple client
-	simpleClient(loop, "127.0.0.1:12345")
-	//
-	loop.Run()
+  loop, err := liblpc.NewIOEvtLoop(1024 * 4)
+  std.AssertError(err, "new event loop")
+  defer std.CloseIgnoreErr(loop)
+  // create listen fd first!
+  listenerFd, err := liblpc.NewListenerFd(
+    "127.0.0.1:12345", // serve at
+    1024,              // backlog
+    true,              // enable reuse addr
+    true,              // enable reuse port
+  )
+  std.AssertError(err, "new listener fd")
+  // new listener
+  listener := liblpc.NewListener(loop, int(listenerFd),   onAccept)
+  defer std.CloseIgnoreErr(listener)
+  listener.Start()
+  // start simple client
+  simpleClient(loop, "127.0.0.1:12345")
+  //
+  loop.Run()
 }
 ```
 
