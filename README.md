@@ -2,7 +2,7 @@
 
 High performance async network io library
 
-![go report](https://goreportcard.com/badge/github.com/gen-iot/rpcx)
+![go report](https://goreportcard.com/badge/github.com/gen-iot/liblpc)
 ![license](https://img.shields.io/badge/license-MIT-brightgreen.svg)
 
 ## First
