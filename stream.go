@@ -65,6 +65,8 @@ func (this *Stream) SetOnClose(cb StreamOnClose) {
 	this.onClose = cb
 }
 
+// it's safe to invoke Close  multi times.
+// ensure underlay resource has been cleanup
 func (this *Stream) Close() error {
 	this.Loop().RunInLoop(func() {
 		if !this.isClose {
