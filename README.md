@@ -5,8 +5,8 @@ High performance async network io library
 ![go report](https://goreportcard.com/badge/github.com/gen-iot/liblpc)
 ![license](https://img.shields.io/badge/license-MIT-brightgreen.svg)
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/gen-iot/liblpc)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)](https://github.com/gen-iot/liblpc/pulls)
 [![Ask Me Anything !](https://img.shields.io/badge/Ask%20me-anything-1abc9c.svg)](https://github.com/gen-iot/liblpc/issues)
-
 
 ## First
 if you have **any** good feature suggestions or bug fixed ,
