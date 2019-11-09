@@ -27,7 +27,7 @@ func NewLockedSpinLock() *SpinLock {
 }
 
 func (this *SpinLock) Lock() {
-	for ; !atomic.CompareAndSwapInt32(&this.flag, unlocked, locked); {
+	for !atomic.CompareAndSwapInt32(&this.flag, unlocked, locked) {
 		runtime.Gosched()
 	}
 }
