@@ -20,3 +20,4 @@
 bin/
 vendor/
 test_xyz.ipc
+go.sum
