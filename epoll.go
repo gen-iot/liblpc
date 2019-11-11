@@ -13,7 +13,7 @@ type Epoll struct {
 	evtbuf []unix.EpollEvent
 }
 
-func NewPoll(pollSize int) (*Epoll, error) {
+func NewEpoll(pollSize int) (Poller, error) {
 	epoFd, err := unix.EpollCreate1(unix.EPOLL_CLOEXEC)
 	if err != nil {
 		_ = unix.Close(epoFd)
