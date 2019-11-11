@@ -2,6 +2,8 @@ package liblpc
 
 import (
 	"container/list"
+	"context"
+	"github.com/gen-iot/std"
 	"io"
 	"sync/atomic"
 )
@@ -10,7 +12,7 @@ type EventLoop interface {
 	io.Closer
 	RunInLoop(cb func())
 	Notify()
-	Run()
+	Run(ctx context.Context)
 	Break()
 	Poller() Poller
 }
@@ -26,16 +28,23 @@ type evtLoop struct {
 }
 
 func NewEventLoop() (EventLoop, error) {
+	poller, err := NewEpoll(1024)
+	if err != nil {
+		return nil, err
+	}
+	return NewEventLoop2(poller)
+}
+
+func NewEventLoop2(poller Poller) (EventLoop, error) {
 	var err error = nil
 
 	l := new(evtLoop)
 	//
-	l.poller, err = NewPoll(1024)
-	if err != nil {
-		return nil, err
-	}
+	l.poller = poller
+	//
 	l.notify, err = NewNotifyWatcher(l, l.onWakeUp)
 	if err != nil {
+		std.CloseIgnoreErr(l.poller)
 		return nil, err
 	}
 	l.notify.Update(true)
@@ -102,16 +111,26 @@ func (this *evtLoop) Poller() Poller {
 	return this.poller
 }
 
-func (this *evtLoop) Run() {
+func (this *evtLoop) Run(ctx context.Context) {
 	if atomic.LoadInt32(&this.stopFlag) == 1 {
-		panic("loop already finished!")
+		panic("loop already finished!, don't reuse it")
 	}
 	for {
 		_ = this.poller.Poll(-1)
 		if atomic.LoadInt32(&this.stopFlag) == 1 {
 			break
 		}
+		if ctx == nil {
+			continue
+		}
+		select {
+		case <-ctx.Done():
+			goto exitLoop
+		default:
+		}
+
 	}
+exitLoop:
 	this.processPending()
 	close(this.endRunSig)
 }
