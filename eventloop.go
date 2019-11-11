@@ -116,21 +116,19 @@ func (this *evtLoop) Run(ctx context.Context) {
 		panic("loop already finished!, don't reuse it")
 	}
 	for {
-		_ = this.poller.Poll(-1)
 		if atomic.LoadInt32(&this.stopFlag) == 1 {
 			break
 		}
+		_ = this.poller.Poll(-1)
 		if ctx == nil {
 			continue
 		}
 		select {
 		case <-ctx.Done():
-			goto exitLoop
+			this.Break()
 		default:
 		}
-
 	}
-exitLoop:
 	this.processPending()
 	close(this.endRunSig)
 }
