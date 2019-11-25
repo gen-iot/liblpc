@@ -91,7 +91,6 @@ func (this *evtLoop) processPending() {
 
 func (this *evtLoop) Break() {
 	if atomic.LoadInt32(&this.stopFlag) == 1 {
-		stdLog("note: loop already send stop signal.")
 		return
 	}
 	atomic.StoreInt32(&this.stopFlag, 1)
@@ -115,19 +114,22 @@ func (this *evtLoop) Run(ctx context.Context) {
 	if atomic.LoadInt32(&this.stopFlag) == 1 {
 		panic("loop already finished!, don't reuse it")
 	}
+	if ctx != nil {
+		go func() {
+			select {
+			case <-ctx.Done():
+				this.Break()
+			case <-this.endRunSig:
+				// workaround if user never fill `ctx`
+				return
+			}
+		}()
+	}
 	for {
 		if atomic.LoadInt32(&this.stopFlag) == 1 {
 			break
 		}
 		_ = this.poller.Poll(-1)
-		if ctx == nil {
-			continue
-		}
-		select {
-		case <-ctx.Done():
-			this.Break()
-		default:
-		}
 	}
 	this.processPending()
 	close(this.endRunSig)
