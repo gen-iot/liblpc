@@ -198,7 +198,7 @@ func main() {
 ## More EventLoop Backend
 
 |Platform|Backend| Support|
-|:--:|:--:|:--:|
+|:---:|:---:|:---:|
 | Linux | Epoll | Fully Support 😎 |
 | OS X |  Kqueue | Not yet 🥺 | 
 | Windows | IOCP | Not yet 🥺|

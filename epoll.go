@@ -71,7 +71,7 @@ func (this *Epoll) Poll(msec int) error {
 		fd := int(epEvent.Fd)
 		watcher := this.getWatcher(fd)
 		if watcher == nil {
-			stdLog("unknown fd = ", fd, ", drivenWatcher not found")
+			stdLog("unknown fd = ", fd, ", watcher not found")
 			continue
 		}
 		watcher.OnEvent(epEvent.Events)
