@@ -11,15 +11,15 @@ import (
 func MakeIpcSockpair(nonblock bool) (fds [2]int, err error) {
 	syscall.ForkLock.Lock()
 	defer syscall.ForkLock.Unlock()
-	fds, err = unix.Socketpair(unix.AF_UNIX, unix.SOCK_STREAM, 0)
+	typ := unix.SOCK_STREAM | unix.O_CLOEXEC
+	if nonblock {
+		typ |= unix.O_NONBLOCK
+	}
+	fds, err =
+		unix.Socketpair(unix.AF_UNIX,
+			unix.SOCK_STREAM|unix.O_NONBLOCK|unix.O_CLOEXEC, 0)
 	if err != nil {
 		return
-	}
-	for _, fd := range fds {
-		// cmd.Exec will dup fd , so we must set all paired_fd to closeOnExec
-		// duped fd doesnt contain O_CLOEXEC
-		unix.CloseOnExec(fd)
-		_ = unix.SetNonblock(fd, nonblock)
 	}
 	return
 }
