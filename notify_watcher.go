@@ -18,7 +18,7 @@ type NotifyWatcher struct {
 }
 
 func NewNotifyWatcher(loop EventLoop, wakeupCb func()) (*NotifyWatcher, error) {
-	eventFd, err := unix.Eventfd(0, unix.EFD_CLOEXEC|unix.EFD_CLOEXEC)
+	eventFd, err := unix.Eventfd(0, unix.EFD_CLOEXEC|unix.EFD_NONBLOCK)
 	if err != nil {
 		return nil, err
 	}
