@@ -27,3 +27,7 @@ func MakeIpcSockpair(nonblock bool) (fds [2]int, err error) {
 	}
 	return
 }
+
+func Socket(domain, typ, proto int) (fd int, err error) {
+	return unix.Socket(domain, typ, proto)
+}

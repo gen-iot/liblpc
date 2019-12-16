@@ -46,3 +46,16 @@ func MakeIpcSockpair(nonblock bool) (fds [2]int, err error) {
 	}
 	return
 }
+
+func Socket(domain, typ, proto int) (fd int, err error) {
+	fd, err = unix.Socket(domain, typ, proto)
+	if err != nil {
+		return
+	}
+	if err = unix.SetsockoptInt(fd, unix.SOL_SOCKET, unix.SO_NOSIGPIPE, 1); err != nil {
+		_ = unix.Close(fd)
+		fd = -1
+		return
+	}
+	return
+}

@@ -30,7 +30,7 @@ func NewTcpSocketFd(version int, nonblock bool, cloexec bool) (SockFd, error) {
 	default:
 		std.Assert(false, "version must be 4 or 6")
 	}
-	fd, err := unix.Socket(domainType, unix.SOCK_STREAM, unix.IPPROTO_TCP)
+	fd, err := Socket(domainType, unix.SOCK_STREAM, unix.IPPROTO_TCP)
 	if err != nil {
 		return -1, err
 	}
