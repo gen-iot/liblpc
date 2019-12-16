@@ -45,11 +45,12 @@ func (this *Kqueue) handleReadyFd(pfd *unix.PollFd) {
 
 func (this *Kqueue) WatcherCtl(action PollerAction, watcher EventWatcher) error {
 	switch action {
-	case Add, Mod:
-		return this.kqueueCtl(unix.EV_ADD, watcher)
+	case Add:
+		return this.kqueueEvtAdd(watcher)
+	case Mod:
+		return this.kqueueEvtMod(watcher)
 	case Del:
-		return this.kqueueCtl(unix.EV_DELETE|unix.EV_DISABLE|unix.EV_DISPATCH,
-			watcher)
+		return this.kqueueEvtDel(watcher)
 	}
 	return nil
 }
@@ -86,35 +87,78 @@ func (this *Kqueue) Poll(msec int) error {
 	return nil
 }
 
-func (this *Kqueue) kqueueCtl(flags uint16, watcher EventWatcher) error {
-	filters := make([]int16, 0, 2)
+type kqEvtHelper EventSizeType
+
+func (this kqEvtHelper) Flag(testBit EventSizeType) uint16 {
+	if EventSizeType(this)&testBit == 0 {
+		return unix.EV_DELETE
+	}
+	return unix.EV_ADD
+}
+
+func (this *Kqueue) kqueueEvtMod(watcher EventWatcher) error {
+	fd := watcher.GetFd()
 	evt := watcher.GetEvent()
+	_, _ = unix.Kevent(this.kfd, []unix.Kevent_t{
+		{
+			Ident:  uint64(fd),
+			Filter: unix.EVFILT_READ,
+			Flags:  kqEvtHelper(evt).Flag(Readable),
+		},
+		{
+			Ident:  uint64(fd),
+			Filter: unix.EVFILT_WRITE,
+			Flags:  kqEvtHelper(evt).Flag(Writeable),
+		},
+	}, nil, nil)
+	return nil
+}
+
+func (this *Kqueue) kqueueEvtAdd(watcher EventWatcher) error {
+	kesAdd := make([]unix.Kevent_t, 0, 2)
+	fd := watcher.GetFd()
+	evt := watcher.GetEvent()
+
 	if evt&Readable != 0 {
-		filters = append(filters, unix.EVFILT_READ)
+		kesAdd = append(kesAdd, unix.Kevent_t{
+			Ident:  uint64(fd),
+			Filter: unix.EVFILT_READ,
+			Flags:  unix.EV_ADD,
+		})
 	}
 	if evt&Writeable != 0 {
-		filters = append(filters, unix.EVFILT_WRITE)
+		kesAdd = append(kesAdd, unix.Kevent_t{
+			Ident:  uint64(fd),
+			Filter: unix.EVFILT_WRITE,
+			Flags:  unix.EV_ADD,
+		})
 	}
+	this.watchers.SetFd(fd, watcher)
+	if len(kesAdd) != 0 {
+		if _, err := unix.Kevent(this.kfd, kesAdd, nil, nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (this *Kqueue) kqueueEvtDel(watcher EventWatcher) error {
+	kes := make([]unix.Kevent_t, 0, 2)
 	fd := watcher.GetFd()
-	ke := unix.Kevent_t{
-		Ident: uint64(fd),
-		Flags: flags,
-	}
-	if len(filters) == 0 {
-		if _, err := unix.Kevent(this.kfd,
-			[]unix.Kevent_t{ke}, nil, nil); err != nil {
-			return err
-		}
-		return nil
-	}
-	for _, f := range filters {
-		ke.Filter = f
-		this.watchers.SetFd(fd, watcher)
-		if _, err := unix.Kevent(this.kfd,
-			[]unix.Kevent_t{ke}, nil, nil); err != nil {
-			return err
-		}
-	}
+
+	kes = append(kes, unix.Kevent_t{
+		Ident:  uint64(fd),
+		Filter: unix.EVFILT_READ,
+		Flags:  unix.EV_DISABLE | unix.EV_DELETE,
+	})
+
+	kes = append(kes, unix.Kevent_t{
+		Ident:  uint64(fd),
+		Filter: unix.EVFILT_WRITE,
+		Flags:  unix.EV_DISABLE | unix.EV_DELETE,
+	})
+	_, _ = unix.Kevent(this.kfd, kes, nil, nil)
+	this.watchers.RmFd(fd)
 	return nil
 }
 
