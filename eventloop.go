@@ -32,17 +32,17 @@ func NewEventLoop() (EventLoop, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewEventLoop2(poller)
+	return NewEventLoop2(poller, DefaultLoopNotifyCreator)
 }
 
-func NewEventLoop2(poller Poller) (EventLoop, error) {
+func NewEventLoop2(poller Poller, builder LoopNotifyBuilder) (EventLoop, error) {
 	var err error = nil
 
 	l := new(evtLoop)
 	//
 	l.poller = poller
 	//
-	l.notify, err = DefaultLoopNotifyCreator(l, l.processPending)
+	l.notify, err = builder(l, l.processPending)
 	if err != nil {
 		std.CloseIgnoreErr(l.poller)
 		return nil, err

@@ -5,7 +5,9 @@ import (
 	"sync"
 )
 
-var DefaultLoopNotifyCreator func(EventLoop, func()) (LoopNotify, error)
+type LoopNotifyBuilder func(EventLoop, func()) (LoopNotify, error)
+
+var DefaultLoopNotifyCreator LoopNotifyBuilder
 
 type EventWatcher interface {
 	io.Closer
