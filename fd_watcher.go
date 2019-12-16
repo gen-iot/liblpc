@@ -19,7 +19,7 @@ type IOWatcher interface {
 type FdWatcher struct {
 	loop          EventLoop
 	fd            int
-	event         uint32
+	event         EventSizeType
 	attachToLoop  bool
 	closeFlag     int32
 	drivenWatcher IOWatcher
@@ -54,11 +54,11 @@ func (this *FdWatcher) GetFd() int {
 	return this.fd
 }
 
-func (this *FdWatcher) GetEvent() uint32 {
+func (this *FdWatcher) GetEvent() EventSizeType {
 	return this.event
 }
 
-func (this *FdWatcher) SetEvent(event uint32) {
+func (this *FdWatcher) SetEvent(event EventSizeType) {
 	this.event = event
 }
 
@@ -115,7 +115,7 @@ func (this *FdWatcher) WantRead() (update bool) {
 
 func (this *FdWatcher) DisableRead() (update bool) {
 	if this.event&Readable != 0 {
-		this.event &= ^uint32(Readable)
+		this.event &= ^EventSizeType(Readable)
 		return true
 	}
 	return false
@@ -131,7 +131,7 @@ func (this *FdWatcher) WantWrite() (update bool) {
 
 func (this *FdWatcher) DisableWrite() (update bool) {
 	if this.event&Writeable != 0 {
-		this.event &= ^uint32(Writeable)
+		this.event &= ^EventSizeType(Writeable)
 		return true
 	}
 

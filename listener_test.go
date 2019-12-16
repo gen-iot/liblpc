@@ -78,5 +78,5 @@ func TestListener(t *testing.T) {
 	})
 	fds.Start()
 	//go localConTester()
-	ioEvtLoop.Run()
+	ioEvtLoop.Run(nil)
 }

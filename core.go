@@ -5,6 +5,8 @@ import (
 	"sync"
 )
 
+var DefaultLoopNotifyCreator func(EventLoop, func()) (LoopNotify, error)
+
 type EventWatcher interface {
 	io.Closer
 	GetFd() int
@@ -21,6 +23,11 @@ const (
 	Mod
 	Del
 )
+
+type LoopNotify interface {
+	EventWatcher
+	Notify()
+}
 
 type Poller interface {
 	io.Closer

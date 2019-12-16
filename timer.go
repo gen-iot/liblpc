@@ -1,3 +1,5 @@
+// +build linux
+
 package liblpc
 
 import (
@@ -44,7 +46,7 @@ func NewTimerWatcher(loop EventLoop, clockId ClockId, onTick TimerOnTick) (*Time
 	return tw, nil
 }
 
-func (this *Timer) OnEvent(event uint32) {
+func (this *Timer) OnEvent(event EventSizeType) {
 	if event&Readable == 0 {
 		return
 	}

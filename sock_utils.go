@@ -1,5 +1,3 @@
-// +build linux
-
 package liblpc
 
 import (
@@ -11,6 +9,13 @@ import (
 
 type SockFd int
 type Fd int
+
+func WOULDBLOCK(err error) bool {
+	if err == nil {
+		return false
+	}
+	return err == unix.EAGAIN || err == unix.EWOULDBLOCK
+}
 
 //create new socket , cloexec by default
 func NewTcpSocketFd(version int, nonblock bool, cloexec bool) (SockFd, error) {
@@ -25,15 +30,18 @@ func NewTcpSocketFd(version int, nonblock bool, cloexec bool) (SockFd, error) {
 	default:
 		std.Assert(false, "version must be 4 or 6")
 	}
-	tp := unix.SOCK_STREAM
+	fd, err := unix.Socket(domainType, unix.SOCK_STREAM, unix.IPPROTO_TCP)
+	if err != nil {
+		return -1, err
+	}
 	if nonblock {
-		tp |= unix.SOCK_NONBLOCK
+		if err := unix.SetNonblock(fd, true); err != nil {
+			return -1, err
+		}
 	}
 	if cloexec {
-		tp |= unix.SOCK_CLOEXEC
+		unix.CloseOnExec(fd)
 	}
-	fd, err := unix.Socket(domainType, tp, unix.IPPROTO_TCP)
-
 	return SockFd(fd), err
 }
 
@@ -62,10 +70,6 @@ func (this SockFd) Bind(sockAddr unix.Sockaddr) error {
 
 func (this SockFd) Listen(backLog int) error {
 	return unix.Listen(int(this), backLog)
-}
-
-func (this SockFd) Accept(flags int) (nfd int, sa unix.Sockaddr, err error) {
-	return unix.Accept4(int(this), flags)
 }
 
 func (this SockFd) Connect(addr unix.Sockaddr) error {

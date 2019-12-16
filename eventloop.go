@@ -19,7 +19,7 @@ type EventLoop interface {
 
 type evtLoop struct {
 	poller    Poller
-	notify    *NotifyWatcher
+	notify    LoopNotify
 	cbQ       *list.List
 	lock      *SpinLock
 	closeFlag int32
@@ -28,7 +28,7 @@ type evtLoop struct {
 }
 
 func NewEventLoop() (EventLoop, error) {
-	poller, err := NewEpoll(1024)
+	poller, err := NewDefaultPoller(1024) // todo use system default poller
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func NewEventLoop2(poller Poller) (EventLoop, error) {
 	//
 	l.poller = poller
 	//
-	l.notify, err = NewNotifyWatcher(l, l.onWakeUp)
+	l.notify, err = DefaultLoopNotifyCreator(l, l.processPending)
 	if err != nil {
 		std.CloseIgnoreErr(l.poller)
 		return nil, err
@@ -70,10 +70,6 @@ func (this *evtLoop) RunInLoop(cb func()) {
 
 func (this *evtLoop) Notify() {
 	this.notify.Notify()
-}
-
-func (this *evtLoop) onWakeUp() {
-	this.processPending()
 }
 
 func (this *evtLoop) processPending() {

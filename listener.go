@@ -21,12 +21,12 @@ func NewListener(loop EventLoop, fd int, onAccept ListenerOnAccept) *Listener {
 	return l
 }
 
-func (this *Listener) OnEvent(event uint32) {
+func (this *Listener) OnEvent(event EventSizeType) {
 	if event&Readable == 0 {
 		return
 	}
 	for {
-		fd, _, err := unix.Accept4(this.GetFd(), unix.O_NONBLOCK|unix.O_CLOEXEC)
+		fd, _, err := SockFd(this.GetFd()).Accept(unix.O_NONBLOCK | unix.O_CLOEXEC)
 		if err != nil {
 			if WOULDBLOCK(err) {
 				return

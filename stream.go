@@ -89,7 +89,7 @@ func (this *Stream) Write(data []byte, inLoop bool) {
 		}
 		if this.writeQ.Len() == 0 && this.writeReady {
 			//write directly
-			nWrite, err := unix.SendmsgN(this.GetFd(), data, nil, nil, unix.MSG_NOSIGNAL)
+			nWrite, err := unix.SendmsgN(this.GetFd(), data, nil, nil, MSG_NOSIGNAL)
 			if err != nil {
 				stdLog("Stream Write , err is ->", err)
 				if WOULDBLOCK(err) {
@@ -140,7 +140,7 @@ func (this *Stream) onRead(data []byte, len int, err error) {
 	}
 }
 
-func (this *Stream) OnEvent(event uint32) {
+func (this *Stream) OnEvent(event EventSizeType) {
 	if this.isClose {
 		return
 	}
@@ -195,7 +195,7 @@ func (this *Stream) OnEvent(event uint32) {
 				front := this.writeQ.Front()
 				dataWillWrite := front.Value.([]byte)
 
-				nWrite, err := unix.SendmsgN(this.GetFd(), dataWillWrite, nil, nil, unix.MSG_NOSIGNAL)
+				nWrite, err := unix.SendmsgN(this.GetFd(), dataWillWrite, nil, nil, MSG_NOSIGNAL)
 				if err != nil {
 					if WOULDBLOCK(err) {
 						stdLog("Stream OnEvent SendmsgN WOULDBLOCK")
@@ -221,7 +221,7 @@ func (this *Stream) OnEvent(event uint32) {
 	if event&Readable != 0 {
 		//read
 		for {
-			nRead, _, err := unix.Recvfrom(this.GetFd(), this.readBuffer, unix.MSG_NOSIGNAL)
+			nRead, _, err := unix.Recvfrom(this.GetFd(), this.readBuffer, MSG_NOSIGNAL)
 			if err != nil {
 				if WOULDBLOCK(err) {
 					stdLog("Stream OnEvent Recvfrom WOULDBLOCK")

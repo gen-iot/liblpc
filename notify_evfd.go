@@ -1,3 +1,5 @@
+// +build linux
+
 package liblpc
 
 import (
@@ -17,7 +19,7 @@ type NotifyWatcher struct {
 	readBuf  []byte
 }
 
-func NewNotifyWatcher(loop EventLoop, wakeupCb func()) (*NotifyWatcher, error) {
+func NewNotifyWatcher(loop EventLoop, wakeupCb func()) (LoopNotify, error) {
 	eventFd, err := unix.Eventfd(0, unix.EFD_CLOEXEC|unix.EFD_NONBLOCK)
 	if err != nil {
 		return nil, err
@@ -29,7 +31,7 @@ func NewNotifyWatcher(loop EventLoop, wakeupCb func()) (*NotifyWatcher, error) {
 	return watcher, nil
 }
 
-func (this *NotifyWatcher) OnEvent(event uint32) {
+func (this *NotifyWatcher) OnEvent(event EventSizeType) {
 	_, err := unix.Read(this.GetFd(), this.readBuf)
 	if err != nil {
 		return

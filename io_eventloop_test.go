@@ -8,6 +8,10 @@ import (
 	"time"
 )
 
+func init() {
+	Debug = true
+}
+
 func testEvtloop(evtLoop EventLoop) {
 	time.Sleep(time.Second)
 	for {
