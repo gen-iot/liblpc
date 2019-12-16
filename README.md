@@ -11,6 +11,19 @@ High performance async network io library
 ## First
 if you have **any** good feature suggestions or bug fixed ,
  **any** [Pull Request](https://github.com/gen-iot/liblpc/pulls) or [Issues](https://github.com/gen-iot/liblpc/issues) are **welcome**!
+ 
+## Usage
+
+
+```bash
+# install liblpc v2
+go get -u github.com/gen-iot/liblpc/v2@latest
+```
+
+```go
+// import 
+import "github.com/gen-iot/liblpc/v2"
+```
 
 ## Overview
 
@@ -197,14 +210,13 @@ func main() {
 
 ## More EventLoop Backend
 
-|Platform|Backend| Support|
-|:---:|:---:|:---:|
-| Linux | Epoll | Fully Support 😎 |
-| OS X |  Kqueue | Not yet 🥺 | 
-| Windows | IOCP | Not yet 🥺|
-| POSIX Like | Poll | Not yet 🥺 |
-| POSIX Like | Select | Not yet 🥺 |
-
+|  Platform  | Backend |     Support      |
+|:----------:|:-------:|:----------------:|
+|   Linux    |  Epoll  | Done :tada:  |
+|    OS X    | Kqueue  | Done :tada: |
+|  Windows   |  IOCP   |    Not yet 🥺    |
+| POSIX Like |  Poll   |    Not yet 🥺    |
+| POSIX Like | Select  |    Not yet 🥺    |
 
 `liblpc` using interface `Poller` and `Watcher` as abstraction for any backend.
 
