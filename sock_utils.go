@@ -53,15 +53,12 @@ func (this SockFd) ReuseAddr(enable bool) error {
 	return unix.SetsockoptInt(int(this), unix.SOL_SOCKET, unix.SO_REUSEADDR, opv)
 }
 
-//noinspection GoSnakeCaseUsage
-const SO_REUSEPORT = 0x0F
-
 func (this SockFd) ReusePort(enable bool) error {
 	opv := 1
 	if !enable {
 		opv = 0
 	}
-	return unix.SetsockoptInt(int(this), unix.SOL_SOCKET, SO_REUSEPORT, opv)
+	return unix.SetsockoptInt(int(this), unix.SOL_SOCKET, unix.SO_REUSEPORT, opv)
 }
 
 func (this SockFd) Bind(sockAddr unix.Sockaddr) error {
