@@ -1,4 +1,4 @@
-module github.com/gen-iot/liblpc
+module github.com/gen-iot/liblpc/v2
 
 go 1.12
 
