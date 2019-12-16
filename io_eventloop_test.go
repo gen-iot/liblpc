@@ -26,12 +26,14 @@ func TestNotify(t *testing.T) {
 	evtLoop, err := NewEventLoop()
 	go testEvtloop(evtLoop)
 	std.AssertError(err, "NewEventLoop")
+	defer std.CloseIgnoreErr(evtLoop)
 	evtLoop.Run(nil)
 }
 
 func TestEpoll_WatcherCtl_CloseBeforeAdd(t *testing.T) {
 	loop, err := NewIOEvtLoop(1024)
 	std.AssertError(err, "new io evtloop")
+	defer std.CloseIgnoreErr(loop)
 	//
 	fds, err := MakeIpcSockpair(true)
 	std.AssertError(err, "make ipc sockpair .1")
@@ -60,6 +62,7 @@ func TestEpoll_WatcherCtl_CloseBeforeAdd(t *testing.T) {
 func TestEpoll_WatcherCtl_CloseAfterAdd(t *testing.T) {
 	loop, err := NewIOEvtLoop(1024)
 	std.AssertError(err, "new io evtloop")
+	defer std.CloseIgnoreErr(loop)
 	//
 	fds, err := MakeIpcSockpair(true)
 	std.AssertError(err, "make ipc sockpair .1")
@@ -93,6 +96,7 @@ func TestIOEvtLoop(t *testing.T) {
 	std.AssertError(e, "MakeIpcSockpair")
 	loop, e := NewIOEvtLoop(4 * 1024)
 	std.AssertError(e, "NewIOEvtLoop")
+	defer std.CloseIgnoreErr(loop)
 	stream := NewConnStream(loop, int(fds[0]),
 		func(sw StreamWriter, data []byte, len int) {
 			stdLog("Server onRead , data is -> ", string(data[:len]))
@@ -105,13 +109,14 @@ func TestIOEvtLoop(t *testing.T) {
 	defer std.CloseIgnoreErr(stream)
 	stream.Start()
 	go func() {
-		for idx := 0; idx < 10; idx++ {
-			time.Sleep(time.Second)
+		for idx := 0; idx < 100; idx++ {
+			time.Sleep(time.Millisecond)
 			_, err := unix.Write(fds[1], []byte(time.Now().String()))
 			std.AssertError(err, "Write")
 		}
 		err := unix.Close(fds[1])
 		std.AssertError(err, "Close")
+		loop.Break()
 	}()
 	loop.Run(nil)
 }
@@ -122,6 +127,7 @@ func TestSpawnIO(t *testing.T) {
 	std.AssertError(err, "MakeIpcSockpair")
 	loop, err := NewIOEvtLoop(2 * 1024 * 1024)
 	std.AssertError(err, "NewIOEvtLoop")
+	defer std.CloseIgnoreErr(loop)
 	cmd, err := Spawn("bin/child", fds[1])
 	std.AssertError(err, "Spawn")
 	stdLog("spawn success pid = ", cmd.Process.Pid)
