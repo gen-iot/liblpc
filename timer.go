@@ -45,7 +45,7 @@ func NewTimerWatcher(loop EventLoop, clockId ClockId, onTick TimerOnTick) (*Time
 }
 
 func (this *Timer) OnEvent(event uint32) {
-	if event&unix.EPOLLIN == 0 {
+	if event&Readable == 0 {
 		return
 	}
 	_, err := unix.Read(this.GetFd(), this.readBuf)

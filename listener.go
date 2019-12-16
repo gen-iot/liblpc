@@ -22,7 +22,7 @@ func NewListener(loop EventLoop, fd int, onAccept ListenerOnAccept) *Listener {
 }
 
 func (this *Listener) OnEvent(event uint32) {
-	if event&unix.EPOLLIN == 0 {
+	if event&Readable == 0 {
 		return
 	}
 	for {

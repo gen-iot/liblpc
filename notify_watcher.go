@@ -18,12 +18,12 @@ type NotifyWatcher struct {
 }
 
 func NewNotifyWatcher(loop EventLoop, wakeupCb func()) (*NotifyWatcher, error) {
-	eventFd, err := unix.Eventfd(0, unix.EFD_CLOEXEC|unix.EFD_CLOEXEC)
+	eventFd, err := unix.Eventfd(0, unix.EFD_CLOEXEC|unix.EFD_NONBLOCK)
 	if err != nil {
 		return nil, err
 	}
 	watcher := new(NotifyWatcher)
-	watcher.FdWatcher = NewFdWatcher(loop, int(eventFd), watcher)
+	watcher.FdWatcher = NewFdWatcher(loop, eventFd, watcher)
 	watcher.wakeupCb = wakeupCb
 	watcher.readBuf = make([]byte, 8)
 	return watcher, nil
@@ -39,11 +39,11 @@ func (this *NotifyWatcher) OnEvent(event uint32) {
 	}
 }
 
-func (this *NotifyWatcher) GetEvent() uint32 {
-	return unix.EPOLLIN
+func (this *NotifyWatcher) GetEvent() EventSizeType {
+	return Readable
 }
 
-func (this *NotifyWatcher) SetEvent(event uint32) {
+func (this *NotifyWatcher) SetEvent(event EventSizeType) {
 }
 
 func (this *NotifyWatcher) Notify() {

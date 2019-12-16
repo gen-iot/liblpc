@@ -3,14 +3,14 @@
 package liblpc
 
 import (
+	"github.com/gen-iot/std"
 	"golang.org/x/sys/unix"
-	"sync"
 )
 
 type Epoll struct {
-	efd    int
-	wm     *sync.Map
-	evtbuf []unix.EpollEvent
+	efd      int
+	watchers *FdWatcherMap
+	evtbuf   []unix.EpollEvent
 }
 
 func NewEpoll(pollSize int) (Poller, error) {
@@ -21,31 +21,13 @@ func NewEpoll(pollSize int) (Poller, error) {
 	}
 	p := new(Epoll)
 	p.efd = epoFd
-	p.wm = new(sync.Map)
+	p.watchers = NewFdWatcherMap()
 	p.evtbuf = make([]unix.EpollEvent, pollSize)
 	return p, nil
 }
-func (this *Epoll) rmFd(fd int) {
-	this.wm.Delete(fd)
-}
-
-func (this *Epoll) setFd(fd int, watcher EventWatcher) {
-	this.wm.Store(fd, watcher)
-}
-
-func (this *Epoll) getWatcher(fd int) EventWatcher {
-	value, ok := this.wm.Load(fd)
-	if !ok {
-		return nil
-	}
-	return value.(EventWatcher)
-}
 
 func (this *Epoll) Close() error {
-	this.wm.Range(func(key, value interface{}) bool {
-		_ = value.(EventWatcher).Close()
-		return true
-	})
+	std.CloseIgnoreErr(this.watchers)
 	return unix.Close(this.efd)
 }
 
@@ -69,9 +51,9 @@ func (this *Epoll) Poll(msec int) error {
 	for idx := 0; idx < nevents; idx++ {
 		epEvent := this.evtbuf[idx]
 		fd := int(epEvent.Fd)
-		watcher := this.getWatcher(fd)
+		watcher := this.watchers.GetWatcher(fd)
 		if watcher == nil {
-			stdLog("unknown fd = ", fd, ", watcher not found")
+			stdLog("epoll unknown fd = ", fd, ", watcher not found")
 			continue
 		}
 		watcher.OnEvent(epEvent.Events)
@@ -88,7 +70,7 @@ func (this *Epoll) AddFd(fd int, event uint32, watcher EventWatcher) error {
 	if err != nil {
 		return err
 	}
-	this.setFd(fd, watcher)
+	this.watchers.SetFd(fd, watcher)
 	return nil
 }
 
@@ -104,7 +86,7 @@ func (this *Epoll) ModFd(fd int, event uint32) error {
 func (this *Epoll) DelFd(fd int) error {
 	err := unix.EpollCtl(this.efd, unix.EPOLL_CTL_DEL, fd, nil)
 	if err == nil {
-		this.rmFd(fd)
+		this.watchers.RmFd(fd)
 	}
 	return err
 }

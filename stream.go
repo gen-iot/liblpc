@@ -144,7 +144,7 @@ func (this *Stream) OnEvent(event uint32) {
 	if this.isClose {
 		return
 	}
-	if event&unix.EPOLLOUT != 0 {
+	if event&Writeable != 0 {
 		// invoke onConnect
 
 		if !this.writeReady {
@@ -218,7 +218,7 @@ func (this *Stream) OnEvent(event uint32) {
 		}
 	}
 
-	if event&unix.EPOLLIN != 0 {
+	if event&Readable != 0 {
 		//read
 		for {
 			nRead, _, err := unix.Recvfrom(this.GetFd(), this.readBuffer, unix.MSG_NOSIGNAL)

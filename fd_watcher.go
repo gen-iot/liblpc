@@ -106,32 +106,32 @@ func (this *FdWatcher) Close() error {
 }
 
 func (this *FdWatcher) WantRead() (update bool) {
-	if this.event&unix.EPOLLIN != 0 {
+	if this.event&Readable != 0 {
 		return false
 	}
-	this.event |= unix.EPOLLIN
+	this.event |= Readable
 	return true
 }
 
 func (this *FdWatcher) DisableRead() (update bool) {
-	if this.event&unix.EPOLLIN != 0 {
-		this.event &= ^uint32(unix.EPOLLIN)
+	if this.event&Readable != 0 {
+		this.event &= ^uint32(Readable)
 		return true
 	}
 	return false
 }
 
 func (this *FdWatcher) WantWrite() (update bool) {
-	if this.event&unix.EPOLLOUT != 0 {
+	if this.event&Writeable != 0 {
 		return false
 	}
-	this.event |= unix.EPOLLOUT
+	this.event |= Writeable
 	return true
 }
 
 func (this *FdWatcher) DisableWrite() (update bool) {
-	if this.event&unix.EPOLLOUT != 0 {
-		this.event &= ^uint32(unix.EPOLLOUT)
+	if this.event&Writeable != 0 {
+		this.event &= ^uint32(Writeable)
 		return true
 	}
 

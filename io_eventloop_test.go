@@ -22,7 +22,7 @@ func TestNotify(t *testing.T) {
 	evtLoop, err := NewEventLoop()
 	go testEvtloop(evtLoop)
 	std.AssertError(err, "NewEventLoop")
-	evtLoop.Run()
+	evtLoop.Run(nil)
 }
 
 func TestEpoll_WatcherCtl_CloseBeforeAdd(t *testing.T) {
@@ -50,7 +50,7 @@ func TestEpoll_WatcherCtl_CloseBeforeAdd(t *testing.T) {
 	err = unix.Close(fds[1])
 	std.AssertError(err, "close (before add) fds[1] err")
 
-	loop.Run()
+	loop.Run(nil)
 }
 
 func TestEpoll_WatcherCtl_CloseAfterAdd(t *testing.T) {
@@ -81,7 +81,7 @@ func TestEpoll_WatcherCtl_CloseAfterAdd(t *testing.T) {
 		std.AssertError(err, "close fds[1] err")
 	}()
 	//
-	loop.Run()
+	loop.Run(nil)
 }
 
 func TestIOEvtLoop(t *testing.T) {
@@ -109,7 +109,7 @@ func TestIOEvtLoop(t *testing.T) {
 		err := unix.Close(fds[1])
 		std.AssertError(err, "Close")
 	}()
-	loop.Run()
+	loop.Run(nil)
 }
 
 func TestSpawnIO(t *testing.T) {
@@ -139,5 +139,5 @@ func TestSpawnIO(t *testing.T) {
 		stdLog("child exit error -> ", err)
 
 	}()
-	loop.Run()
+	loop.Run(nil)
 }
