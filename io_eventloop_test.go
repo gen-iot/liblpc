@@ -86,6 +86,8 @@ func TestEpoll_WatcherCtl_CloseAfterAdd(t *testing.T) {
 		stdLog("conn close (after add) err:", err)
 		err = unix.Close(fds[1])
 		std.AssertError(err, "close fds[1] err")
+		err = conn2.Close()
+		stdLog("conn2 close (after add) err:", err)
 	}()
 	//
 	loop.Run(nil)
