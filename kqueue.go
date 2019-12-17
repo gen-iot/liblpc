@@ -96,24 +96,6 @@ func (this kqEvtHelper) Flag(testBit EventSizeType) uint16 {
 	return unix.EV_ADD
 }
 
-func (this *Kqueue) kqueueEvtMod(watcher EventWatcher) error {
-	fd := watcher.GetFd()
-	evt := watcher.GetEvent()
-	_, _ = unix.Kevent(this.kfd, []unix.Kevent_t{
-		{
-			Ident:  uint64(fd),
-			Filter: unix.EVFILT_READ,
-			Flags:  kqEvtHelper(evt).Flag(Readable),
-		},
-		{
-			Ident:  uint64(fd),
-			Filter: unix.EVFILT_WRITE,
-			Flags:  kqEvtHelper(evt).Flag(Writeable),
-		},
-	}, nil, nil)
-	return nil
-}
-
 func (this *Kqueue) kqueueEvtAdd(watcher EventWatcher) error {
 	kesAdd := make([]unix.Kevent_t, 0, 2)
 	fd := watcher.GetFd()
@@ -142,10 +124,42 @@ func (this *Kqueue) kqueueEvtAdd(watcher EventWatcher) error {
 	return nil
 }
 
+func (this *Kqueue) kqueueEvtMod(watcher EventWatcher) error {
+	fd := watcher.GetFd()
+	evt := watcher.GetEvent()
+	evtOut := make([]unix.Kevent_t, 2)
+	nErr, _ := unix.Kevent(this.kfd, []unix.Kevent_t{
+		{
+			Ident:  uint64(fd),
+			Filter: unix.EVFILT_READ,
+			Flags:  kqEvtHelper(evt).Flag(Readable),
+		},
+		{
+			Ident:  uint64(fd),
+			Filter: unix.EVFILT_WRITE,
+			Flags:  kqEvtHelper(evt).Flag(Writeable),
+		},
+	}, evtOut, nil)
+	if nErr == 0 {
+		return nil
+	}
+	cmErrs := make(std.CombinedErrors, 0, 2)
+	for idx := 0; idx < nErr; idx++ {
+		if evtOut[idx].Flags&unix.EV_ERROR != 0 &&
+			!unix.Errno(evtOut[idx].Data).Is(unix.ENOENT) {
+			cmErrs = append(cmErrs, unix.Errno(evtOut[idx].Data))
+		}
+	}
+	if len(cmErrs) == 0 {
+		return nil
+	}
+	return cmErrs
+}
+
 func (this *Kqueue) kqueueEvtDel(watcher EventWatcher) error {
 	kes := make([]unix.Kevent_t, 0, 2)
 	fd := watcher.GetFd()
-
+	evtOut := make([]unix.Kevent_t, 0, 2)
 	kes = append(kes, unix.Kevent_t{
 		Ident:  uint64(fd),
 		Filter: unix.EVFILT_READ,
@@ -157,9 +171,22 @@ func (this *Kqueue) kqueueEvtDel(watcher EventWatcher) error {
 		Filter: unix.EVFILT_WRITE,
 		Flags:  unix.EV_DISABLE | unix.EV_DELETE,
 	})
-	_, _ = unix.Kevent(this.kfd, kes, nil, nil)
 	this.watchers.RmFd(fd)
-	return nil
+	nErr, _ := unix.Kevent(this.kfd, kes, evtOut, nil)
+	if nErr == 0 {
+		return nil
+	}
+	cmErrs := make(std.CombinedErrors, 0, 2)
+	for idx := 0; idx < nErr; idx++ {
+		if evtOut[idx].Flags&unix.EV_ERROR != 0 &&
+			!unix.Errno(evtOut[idx].Data).Is(unix.ENOENT) {
+			cmErrs = append(cmErrs, unix.Errno(evtOut[idx].Data))
+		}
+	}
+	if len(cmErrs) == 0 {
+		return nil
+	}
+	return cmErrs
 }
 
 func NewDefaultPoller(pollSize int) (Poller, error) {
