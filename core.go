@@ -6,8 +6,10 @@ import (
 )
 
 type LoopNotifyBuilder func(EventLoop, func()) (LoopNotify, error)
+type PollerBuilder func(size int) (Poller, error)
 
 var DefaultLoopNotifyCreator LoopNotifyBuilder
+var DefaultPollerCreator PollerBuilder
 
 type EventWatcher interface {
 	io.Closer

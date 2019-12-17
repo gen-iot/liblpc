@@ -28,7 +28,7 @@ type evtLoop struct {
 }
 
 func NewEventLoop() (EventLoop, error) {
-	poller, err := NewDefaultPoller(1024) // todo use system default poller
+	poller, err := DefaultPollerCreator(1024) // todo use system default poller
 	if err != nil {
 		return nil, err
 	}

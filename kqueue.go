@@ -1,4 +1,4 @@
-// +build darwin
+// +build darwin,!disable_kqueue
 
 package liblpc
 
@@ -189,6 +189,6 @@ func (this *Kqueue) kqueueEvtDel(watcher EventWatcher) error {
 	return cmErrs
 }
 
-func NewDefaultPoller(pollSize int) (Poller, error) {
-	return NewKqueue(pollSize)
+func init() {
+	DefaultPollerCreator = NewKqueue
 }
