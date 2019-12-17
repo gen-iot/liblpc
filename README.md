@@ -34,6 +34,17 @@ import "github.com/gen-iot/liblpc/v2"
 - Lots Of Unix Socket API Toolbox 🔧
 - Thread(*Goroutine*) Safe! 👍
 
+## Backend
+
+|  Platform  | Backend |     Support      |
+|:----------:|:-------:|:----------------:|
+|   Linux family   |  Epoll  | Done 🎉  |
+|   mac OS<br>(BSD family)     | Kqueue  | Done 🎉 |
+|  Windows   |  IOCP   |    Maybe Never... 😢    |
+| POSIX Like |  Poll   |    Maybe Never... 🥺 <br>we already have `epoll`    |
+| POSIX Like | Select  |    Coming Soon 🤡   |
+
+`liblpc` using interface `Poller` and `Watcher` as abstraction for any backend.
 
 ## Getting Started
 
@@ -208,17 +219,7 @@ func main() {
 }
 ```
 
-## More EventLoop Backend
 
-|  Platform  | Backend |     Support      |
-|:----------:|:-------:|:----------------:|
-|   Linux    |  Epoll  | Done :tada:  |
-|    OS X    | Kqueue  | Done :tada: |
-|  Windows   |  IOCP   |    Not yet 🥺    |
-| POSIX Like |  Poll   |    Not yet 🥺    |
-| POSIX Like | Select  |    Not yet 🥺    |
-
-`liblpc` using interface `Poller` and `Watcher` as abstraction for any backend.
 
 ## License
 
