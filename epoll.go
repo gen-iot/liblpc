@@ -1,4 +1,4 @@
-//+build linux
+//+build linux,!disable_epoll
 
 package liblpc
 
@@ -89,4 +89,8 @@ func (this *Epoll) DelFd(fd int) error {
 		this.watchers.RmFd(fd)
 	}
 	return err
+}
+
+func init() {
+	DefaultPollerCreator = NewEpoll
 }
