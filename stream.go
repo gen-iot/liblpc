@@ -69,10 +69,11 @@ func (this *Stream) SetOnClose(cb StreamOnClose) {
 // ensure underlay resource has been cleanup
 func (this *Stream) Close() error {
 	this.Loop().RunInLoop(func() {
-		if !this.isClose {
-			this.onRead(nil, 0, io.EOF)
+		if this.isClose {
+			return
 		}
 		this.isClose = true
+		this.onRead(nil, 0, io.EOF)
 		if this.DisableRW() {
 			this.Update(true)
 		}
