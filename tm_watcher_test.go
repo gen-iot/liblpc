@@ -28,5 +28,5 @@ func TestTMWatcher(t *testing.T) {
 	defer func() { std.AssertError(watcher.Close(), "drivenWatcher close") }()
 	err = watcher.StartTimer(1000, 1000)
 	std.AssertError(err, "drivenWatcher start")
-	loop.Run()
+	loop.Run(nil)
 }

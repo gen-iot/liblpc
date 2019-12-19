@@ -63,6 +63,6 @@ func main() {
 	// start simple client
 	simpleClient(loop, "127.0.0.1:12345")
 	//
-	loop.Run()
+	loop.Run(nil)
 	log.Println("simple listener exit...")
 }
