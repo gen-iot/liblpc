@@ -53,7 +53,6 @@ func (this *Epoll) Poll(msec int) error {
 		fd := int(epEvent.Fd)
 		watcher := this.watchers.GetWatcher(fd)
 		if watcher == nil {
-			stdLog("epoll unknown fd = ", fd, ", watcher not found")
 			continue
 		}
 		watcher.OnEvent(epEvent.Events)
