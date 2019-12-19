@@ -74,7 +74,6 @@ func (this *Kqueue) Poll(msec int) error {
 		fd := int(kEv.Ident)
 		watcher := this.watchers.GetWatcher(fd)
 		if watcher == nil {
-			stdLog("kqueue unknown fd = ", fd, ", watcher not found")
 			continue
 		}
 		switch kEv.Filter {
